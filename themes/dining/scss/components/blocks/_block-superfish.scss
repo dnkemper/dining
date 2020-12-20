@@ -1,0 +1,156 @@
+$sf-color: $headings-color;
+$anchor-padding-width: 1rem;
+$anchor-padding-height: 2rem;
+$dropdown-items-bg: #333;
+$accordion-color: #fff;
+$accordion-bg: #222;
+$accordion-items-bg: #eee;
+
+.block-superfish {
+  position: static;
+
+  .block__title {
+    @extend .sr-only;
+  }
+
+  #superfish-1-toggle,
+  #superfish-2-toggle, {
+    padding: 1.5em;
+    position: absolute;
+    top: 0;
+    right: 0;
+    color: $sf-color;
+
+    &:before {
+      @include fa(bars);
+      font-size: 2.5rem;
+    }
+
+    &.sf-expanded {
+      &:before {
+        @include fa(times);
+        font-size: 2.5rem;
+      }
+    }
+
+    span {
+      @extend .sr-only;
+    }
+  }
+
+  // Shared styles
+  .sf-style-none {
+    @include clearfix;
+    overflow: visible;
+
+    li {
+      a {
+        padding: 1.2rem;
+        color: $sf-color;
+        text-decoration: none;
+        transition: background 0.3s ease-out;
+
+        &:hover,
+        &:focus {
+          background: rgba(255,255,255,0.5);
+        }
+      }
+    }
+
+    .sf-sub-indicator {
+      display: none;
+    }
+
+    // Top level menu items.
+    a.sf-depth-1 {
+      text-transform: uppercase;
+      font-weight: $fw-bold;
+      font-size: 1.4rem;
+    }
+
+    > li > a.sf-depth-1.menuparent {
+      position: relative;
+      padding-right: $anchor-padding-width + 2rem;
+
+      &:before {
+        @include fa(chevron-down);
+        font-size: 1rem;
+        margin-top: -0.7rem;
+        position: absolute;
+        right: $anchor-padding-width;
+        top: 50%;
+        color: $sf-color;
+      }
+    }
+
+    // Dropdown items.
+    ul {
+      background-color: $dropdown-items-bg;
+      @extend .font-smoothing-on;
+      @include box-shadow(0px 0px 3px rgba(0,0,0,0.3));
+
+      li a {
+        color: #fff;
+      }
+    }
+  }
+
+  // Horizontal styles.
+  .sf-horizontal {
+    float: right;
+
+    li:hover > ul,
+    li.sfHover > ul {
+      top: $header-height;
+    }
+
+    li.sf-depth-1.active-trail > a {
+      box-shadow: 0px -3px 0px $brand-yellow inset;
+    }
+
+    a.sf-depth-1 {
+      padding: $anchor-padding-height $anchor-padding-width;
+    }
+
+    a.sf-depth-1.menuparent {
+
+      &.active {
+        background: transparent;
+      }
+    }
+  }
+
+  // Accordion styles.
+  .sf-accordion {
+    @extend .row;
+    width: auto !important;
+    float: none !important;
+    background: $accordion-items-bg;
+    border-top: 1px solid darken($brand-primary, 6);
+    margin-bottom: -2rem;
+    margin-top: 2rem;
+
+
+    li {
+
+      &.sf-clone-parent > a.sf-depth-1 {
+        background: inherit;
+      }
+
+      a.sf-depth-1.menuparent:before {
+        color: #fff;
+      }
+
+      a {
+        border-bottom: 1px solid rgba(0,0,0,0.2);
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+
+        &.sf-depth-1 {
+          color: $accordion-color;
+          background: $accordion-bg;
+          @extend .font-smoothing-on;
+        }
+      }
+    }
+  }
+}

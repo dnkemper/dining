@@ -1,0 +1,9 @@
+.field {
+  .field-label {
+    font-weight: $fw-bold;
+  }
+
+  &.field-label-inline > div {
+    display: inline-block;
+  }
+}

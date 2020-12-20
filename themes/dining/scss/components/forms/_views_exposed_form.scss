@@ -1,0 +1,4 @@
+ // Override views.css to remove top margin on form submits.
+.views-exposed-form .views-exposed-widget .form-submit {
+    margin-top: 0;
+}

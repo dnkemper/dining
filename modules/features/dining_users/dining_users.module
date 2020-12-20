@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Dining Users feature.
+ */
+
+include_once 'dining_users.features.inc';

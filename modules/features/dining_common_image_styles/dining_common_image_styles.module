@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Dining Common Image Styles feature.
+ */
+
+include_once 'dining_common_image_styles.features.inc';

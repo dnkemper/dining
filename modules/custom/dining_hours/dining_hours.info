@@ -1,0 +1,6 @@
+name = Dining Hours
+description = Hours code
+core = 7.x
+package = Dining
+version = 7.x-1.01
+project = dining_hours

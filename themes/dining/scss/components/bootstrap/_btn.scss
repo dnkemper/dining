@@ -1,0 +1,44 @@
+// Warning appears as orange
+.btn-tan-dark {
+    @include button-variant($text-color, $color-tan-dark, darken($color-tan-dark, 4));
+  }
+  .btn-tan-dark:focus, .btn-tan-dark.focus {
+    color: #444444;
+    background-color: #c1bbb2;
+    border-color: #968c7c;
+  }
+
+  .btn-tan-dark:hover {
+    color: #444444;
+    background-color: #c1bbb2;
+    border-color: #b4aca1;
+  }
+
+  .btn-tan-dark:active, .btn-tan-dark.active,
+  .open > .btn-tan-dark.dropdown-toggle {
+    color: #444444;
+    background-color: #c1bbb2;
+    border-color: #b4aca1;
+  }
+  .btn-tan-dark:active:hover, .btn-tan-dark:active:focus, .btn-tan-dark:active.focus, .btn-tan-dark.active:hover, .btn-tan-dark.active:focus, .btn-tan-dark.active.focus,
+  .open > .btn-tan-dark.dropdown-toggle:hover,
+  .open > .btn-tan-dark.dropdown-toggle:focus,
+  .open > .btn-tan-dark.dropdown-toggle.focus {
+    color: #444444;
+    background-color: #b2aa9e;
+    border-color: #968c7c; }
+  .btn-tan-dark:active, .btn-tan-dark.active,
+  .open > .btn-tan-dark.dropdown-toggle {
+    background-image: none; }
+  .btn-tan-dark.disabled:hover, .btn-tan-dark.disabled:focus, .btn-tan-dark.disabled.focus, .btn-tan-dark[disabled]:hover, .btn-tan-dark[disabled]:focus, .btn-tan-dark[disabled].focus,
+  fieldset[disabled] .btn-tan-dark:hover,
+  fieldset[disabled] .btn-tan-dark:focus,
+  fieldset[disabled] .btn-tan-dark.focus {
+    background-color: #d8d4ce;
+    border-color: #cfcac3; }
+  .btn-tan-dark .badge {
+    color: #d8d4ce;}
+
+  .btn-involved {
+    background: black;
+  }

@@ -1,0 +1,45 @@
+/**
+* Change styling for elements that mix pixels and ems
+* Required to utilize the REM font-sizing overrides for Bootstrap 3.
+*/
+
+.form-control-feedback {
+  width: calc($input-height-base + 2px);
+  height: calc($input-height-base + 2px);
+}
+.input-lg + .form-control-feedback {
+  width: calc($input-height-large + 2px);
+  height: calc($input-height-large + 2px);
+}
+.input-sm + .form-control-feedback {
+  width: calc($input-height-small + 2px);
+  height: calc($input-height-small + 2px);
+}
+.form-control {
+  height: calc($input-height-base + 2px);
+}
+.form-horizontal {
+  .radio,
+  .checkbox,
+  .radio-inline,
+  .checkbox-inline {
+    padding: $padding-base-vertical;
+    border: 1px solid transparent;
+  }
+  .radio,
+  .checkbox {
+    min-height: calc(($line-height-computed + $padding-base-vertical) + 1px);
+}
+.form-control-static {
+  padding-top: $padding-base-vertical;
+  border-top: 1px solid transparent;
+  padding-bottom: $padding-base-vertical;
+  border-bottom: 1px solid transparent;
+}
+
+@media (min-width: #{$screen-sm-min}) {
+  .control-label {
+    padding-top: $padding-base-vertical;
+    border-top: 1px solid transparent;
+  }
+}}

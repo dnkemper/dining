@@ -1,0 +1,13 @@
+<?php
+/**
+ * @file
+ * This file holds the install/uninstall logic for uhd_wysiwyg, as well as update
+ * scripts.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function uhd_wysiwyg_install() {
+  variable_set('sitenow_wysiwyg_theme_css', '%bsites/dining.uiowa.edu/themes/dining_omega/css/dining-omega.styles.css');
+}

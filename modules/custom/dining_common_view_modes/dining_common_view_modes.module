@@ -1,0 +1,38 @@
+<?php
+/**
+ * @file
+ * Code for the Dining Common View Modes feature.
+ */
+
+/**
+* Implements hook_entity_info_alter().
+*/
+function dining_common_view_modes_entity_info_alter(&$entity_info) {
+  // Node view mode
+  $entity_info['node']['view modes']['node_list'] = array(
+    'label' => t('List'),
+    'custom settings' => TRUE,
+  );
+  // Taxonomy Term view mode
+  $entity_info['taxonomy_term']['view modes']['list'] = array(
+    'label' => t('List'),
+    'custom settings' => TRUE,
+  );
+  // File entity view modes
+  $entity_info['file']['view modes']['uhd_small'] = array(
+    'label' => t('Small'),
+    'custom settings' => TRUE,
+  );
+  $entity_info['file']['view modes']['uhd_extra_large'] = array(
+    'label' => t('Extra Large'),
+    'custom settings' => TRUE,
+  );
+  $entity_info['file']['view modes']['uhd_basic_masthead'] = array(
+    'label' => t('Basic Masthead'),
+    'custom settings' => TRUE,
+  );
+  $entity_info['file']['view modes']['promotion_slideshow_linked'] = array(
+    'label' => t('Promotion slideshow linked'),
+    'custom settings' => TRUE,
+  );
+}

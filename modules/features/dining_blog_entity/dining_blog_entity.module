@@ -1,0 +1,74 @@
+<?php
+/**
+ * @file
+ * Code for the Dining Blog Entity feature.
+ */
+
+include_once 'dining_blog_entity.features.inc';
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function dining_blog_entity_field_extra_fields() {
+  $extra['node']['blog']['display']['dining_blog_authorship'] = array(
+    'label' => t('Authoring information'),
+    'description' => t("Render the blog post's author if applicable."),
+    'weight' => 0,
+  );
+
+  return $extra;
+}
+
+/**
+ * Implements hook_entity_view().
+ */
+function dining_blog_entity_entity_view($entity, $type, $view_mode, $langcode) {
+  // Extra fields for nodes.
+  if ($type == 'node' && $entity->type == 'blog') {
+
+    $extra_fields = field_extra_fields_get_display('node', $entity->type, $view_mode);
+    // Get extrafield visibility.
+    if (!empty($extra_fields['dining_blog_authorship']) && $extra_fields['dining_blog_authorship']['visible'] == TRUE) {
+      // If the post is set to display the Authorship, build out the author
+      // content.
+      if ($entity->field_blog_display_author[LANGUAGE_NONE][0]['value']) {
+        $account = user_load($entity->uid, $reset = FALSE);
+
+        $entity->content['dining_blog_authorship'] = array(
+          '#prefix' => '<span class="authoring author-post">',
+          '#suffix' => '</span>',
+          'heading' => array(
+            '#prefix' => '<h2>',
+            '#markup' => t('About the Author'),
+            '#suffix' => '</h2>',
+          ),
+          'photo' => array(
+            '#prefix' => '<span class="author-photo">',
+            '#theme' => 'image_style',
+            '#path' => $account->picture->uri,
+            '#style_name' => 'medium',
+            '#alt' => $account->picture->alt,
+            '#title' => $account->picture->title,
+            '#suffix' => '</span>',
+          ),
+          'name' => array(
+            '#prefix' => '<span class="author-name">',
+            '#markup' => drupal_render(field_view_value('user', $account, 'field_user_name', $account->field_user_name[LANGUAGE_NONE][0])),
+            '#suffix' => '</span>',
+          ),
+          'bio' => array(
+            '#prefix' => '<p class="author-bio">',
+            '#markup' => drupal_render(field_view_value('user', $account, 'field_user_bio', $account->field_user_bio[LANGUAGE_NONE][0])),
+            '#suffix' => '</p>',
+          ),
+        );
+      }
+      else {
+        // Otherwise, add default authorship blurb.
+        $entity->content['dining_blog_authorship'] = array(
+          '#markup' => '<span class="authoring staff-post">Published by University Housing and Dining team</span>',
+        );
+      }
+    }
+  }
+}

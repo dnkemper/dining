@@ -1,0 +1,140 @@
+<?php
+
+/**
+ * @file
+ * Code for Dining Core.
+ */
+
+/**
+ * Helper function to attach chosen library to a form.
+ *
+ * @param array $form
+ *   A Drupal form.
+ */
+function dining_core_attach_chosen(array &$form) {
+  if (($library = libraries_detect('chosen')) && !empty($library['installed'])) {
+    libraries_load('chosen');
+    $form['#attached']['libraries_load'][] = array('chosen');
+    $form['#attached']['js'] = array(
+      drupal_get_path('module', 'dining_core') . '/js/chosen.jquery.js',
+    );
+  }
+}
+
+/**
+ * Implements hook_media_wysiwyg_allowed_view_modes_alter().
+ */
+function dining_core_media_wysiwyg_allowed_view_modes_alter(&$view_modes, $file) {
+  // Relabel custom view modes options.
+  switch ($file->type) {
+    case 'document':
+      unset($view_modes['dining_small']);
+      unset($view_modes['dining_extra_large']);
+      break;
+
+    case 'image':
+      $view_modes['dining_small']['label'] = t('Small - Crop and scale 160x120');
+      $view_modes['dining_extra_large']['label'] = t('Masthead - Crop and scale 860x300');
+      break;
+
+    case 'video':
+      unset($view_modes['dining_small']);
+      unset($view_modes['dining_extra_large']);
+      break;
+  }
+}
+
+/**
+ * Implements hook_libraries_info().
+ */
+function dining_core_libraries_info() {
+  $libraries['pickadate'] = array(
+    'name' => 'Pickadate',
+    'vendor url' => 'https://github.com/amsul/pickadate.js',
+    'download url' => 'https://github.com/amsul/pickadate.js',
+    'path' => 'lib',
+    'version arguments' => array(
+      'file' => 'lib/picker.date.js',
+      'pattern' => '@v([0-9]+.[0-9]+.[0-9])@',
+      'lines' => 5,
+    ),
+    'files' => array(
+      'js' => array(
+        'compressed/picker.js',
+        'compressed/picker.date.js',
+        'compressed/picker.time.js',
+      ),
+      'css' => array(
+        'compressed/themes/default.css',
+        'compressed/themes/default.date.css',
+        'compressed/themes/default.time.css',
+      ),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Implements hook_query_TAG_alter() for entity reference selection handlers.
+ */
+function dining_core_query_entityreference_alter(QueryAlterableInterface $query) {
+  // Increase the results for entityreference autocomplete to 30.
+  $query->range(0, 30);
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function dining_core_block_info() {
+  $blocks['dining_core_dates']['info'] = t('Upcoming Dates');
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function dining_core_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'dining_core_dates':
+      $params = array(
+        'display_id' => 'year',
+        'filters[department]' => '61',
+        'filters[startdate][value][date]' => date('m-d-Y'),
+        'page' => 0,
+        'items_per_page' => 20,
+      );
+
+      $data = uiowa_events_load($params);
+
+      $items = array();
+
+      foreach ($data['events'] as $event) {
+        $slide = array(
+          '#theme' => 'uiowa_events_teaser',
+          '#event' => $event,
+          '#external_link' => TRUE,
+        );
+
+        $items[] = array(
+          'slide' => $slide,
+        );
+      }
+
+      $options = array(
+        'arrows' => TRUE,
+        'vertical' => TRUE,
+        'verticalSwiping' => TRUE,
+        'autoplay' => TRUE,
+      );
+
+      $slick = slick_build($items, $options);
+      $block['content'] = $slick;
+
+      break;
+    }
+
+  return $block;
+}

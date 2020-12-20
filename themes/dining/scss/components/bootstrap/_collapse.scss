@@ -1,0 +1,20 @@
+.collapse-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  &:hover,
+  &:focus {
+    text-decoration: none;
+  }
+
+  &.collapsed {
+    .collapse-indicator {
+      transform: rotate(45deg);
+    }
+  }
+
+  .collapse-indicator {
+    transition: transform 0.3s;
+  }
+}

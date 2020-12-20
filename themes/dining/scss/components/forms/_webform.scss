@@ -1,0 +1,94 @@
+.webform-client-form-17176 {
+    
+    .webform-progressbar {
+        width: 94%;
+
+        @media (max-width: 768px) {
+            display: none;
+        }
+    }
+
+    .webform-container-inline label {
+      display: flex;
+    }
+
+    .webform-progressbar-page .webform-progressbar-page-label {
+        margin: 0 -15em;
+    }
+
+    .webform-progressbar-outer {
+        margin: .5rem -10px 10rem;
+    }
+    .form-item {
+      margin: $field-vertical-spacing 0;
+    }
+  
+    .form-managed-file {
+      input {
+        margin: $field-vertical-spacing 0;
+      }
+  
+      .btn {
+        @extend .btn-sm;
+      }
+    }
+  
+    .form-actions {
+      input {
+        margin: $field-vertical-spacing $field-vertical-spacing $field-vertical-spacing 0;
+      }
+  
+      .webform-draft {
+        @extend .btn-info;
+      }
+  
+      .webform-previous, .webform-next {
+        @extend .btn-primary;
+      }
+
+      .webform-submit {
+          margin: 15px 0px;
+      }
+    }
+  
+  }
+
+  .webform-progressbar {
+   text-align: center;
+   width: 100%;
+
+    @media (max-width: 768px) {
+      display: none;
+    }
+
+    .webform-progressbar-number {
+      margin: 5% 0% 3%;
+    }
+  }
+
+  .webform-progressbar-inner {
+    display: none;
+  }
+
+  .webform-progressbar-outer {
+    float: none;
+    display: flex;
+  }
+
+  .webform-progressbar-page {
+    width: 100%;
+    position: unset;
+  }
+.webform-client-form-17171{
+  width: 50%;
+
+  .webform-submit {
+    margin: 2% 0%;
+  }
+
+  .webform-container-inline {
+    .form-item {
+      display: inline-flex;
+    }
+  }
+}

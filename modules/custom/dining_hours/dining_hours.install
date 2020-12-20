@@ -1,0 +1,217 @@
+<?php
+/**
+ * @file
+ * Dining hours install tasks.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function dining_hours_schema() {
+  $schema['cache_dining_hours'] = drupal_get_schema_unprocessed('system', 'cache');
+  return $schema;
+}
+
+/**
+ * Set Exchange calendar keys for each location.
+ */
+function dining_hours_install() {
+  $query = new EntityFieldQuery();
+
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'location')
+    ->propertyCondition('status', NODE_PUBLISHED);
+
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $nids = array_keys($result['node']);
+    $locations = entity_load('node', $nids);
+
+    foreach ($locations as $location) {
+      $field = $location->field_location_hours_key;
+      if (!isset($field[LANGUAGE_NONE], $field[LANGUAGE_NONE][0], $field[LANGUAGE_NONE][0]['value'])) {
+        switch ($location->title) {
+          case 'Burge Market Place':
+            $key = 'RES-BurgeMarketPlace';
+            break;
+
+          case 'Hillcrest Market Place':
+            $key = 'RES-HillcrestMarketPlace';
+            break;
+
+          case 'River Room Cafe':
+            $key = 'RES-RiverRoomCafe';
+            break;
+
+          case 'Clinton St. Market':
+            $key = 'RES-ClintonStMarket';
+            break;
+
+          case 'CRWC Power Cafe':
+            $key = 'RES-PowerCafe';
+            break;
+
+          case 'Pat\'s Diner':
+            $key = 'RES-PatsDiner';
+            break;
+
+          case 'Food For Thought Cafe':
+            $key = 'RES-FoodforThoughtCafe';
+            break;
+
+          case 'Java Hawk Express':
+            $key = 'RES-JavaHawkExpress';
+            break;
+
+          case 'The Filling Station':
+            $key = 'RES-TheFillingStation';
+            break;
+
+          case 'EMRB Cafe':
+            $key = 'RES-EMRBCafe';
+            break;
+
+          case 'Hillcrest Market':
+            $key = 'RES-HillcrestMarket';
+            break;
+
+          case 'Mayflower Market':
+            $key = 'RES-MayflowerMarket';
+            break;
+
+          case 'Union Market':
+            $key = 'RES-UnionMarket';
+            break;
+
+          case 'Court Cafe':
+            $key = 'RES-CourtCafe';
+            break;
+
+          case 'Union Station':
+            $key = 'RES-UnionStation';
+            break;
+
+          default:
+            $key = NULL;
+            break;
+        }
+
+        if (isset($key)) {
+          $location->field_location_hours_key[LANGUAGE_NONE][0]['value'] = $key;
+          node_save($location);
+        }
+        else {
+          drupal_set_message(t('Exchange key not set for @location', array('@location' => $location->title)), 'warning');
+        }
+      }
+    }
+  }
+}
+
+
+/**
+ * Set Exchange calendar keys for each location.
+ */
+function dining_hours_update_7100() {
+  $query = new EntityFieldQuery();
+
+  $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'location')
+    ->propertyCondition('status', NODE_PUBLISHED);
+
+  $result = $query->execute();
+
+  if (isset($result['node'])) {
+    $nids = array_keys($result['node']);
+    $locations = entity_load('node', $nids);
+
+    foreach ($locations as $location) {
+      $field = $location->field_location_hours_key;
+      if (!isset($field[LANGUAGE_NONE], $field[LANGUAGE_NONE][0], $field[LANGUAGE_NONE][0]['value'])) {
+        switch ($location->title) {
+          case 'Burge Market Place':
+            $key = 'RES-BurgeMarketPlace';
+            break;
+
+          case 'Hillcrest Market Place':
+            $key = 'RES-HillcrestMarketPlace';
+            break;
+
+          case 'River Room Cafe':
+            $key = 'RES-RiverRoomCafe';
+            break;
+
+          case 'Clinton St. Market':
+            $key = 'RES-ClintonStMarket';
+            break;
+
+          case 'CRWC Power Cafe':
+            $key = 'RES-PowerCafe';
+            break;
+
+          case 'Pat\'s Diner':
+            $key = 'RES-PatsDiner';
+            break;
+
+          case 'Food For Thought Cafe':
+            $key = 'RES-FoodforThoughtCafe';
+            break;
+
+          case 'Java Hawk Express':
+            $key = 'RES-JavaHawkExpress';
+            break;
+
+          case 'The Filling Station':
+            $key = 'RES-TheFillingStation';
+            break;
+
+          case 'EMRB Cafe':
+            $key = 'RES-EMRBCafe';
+            break;
+
+          case 'Hillcrest Market':
+            $key = 'RES-HillcrestMarket';
+            break;
+
+          case 'Mayflower Market':
+            $key = 'RES-MayflowerMarket';
+            break;
+
+          case 'Union Market':
+            $key = 'RES-UnionMarket';
+            break;
+
+          case 'Court Cafe':
+            $key = 'RES-CourtCafe';
+            break;
+
+          case 'Union Station':
+            $key = 'RES-UnionStation';
+            break;
+
+          default:
+            $key = NULL;
+            break;
+        }
+
+        if (isset($key)) {
+          $location->field_location_hours_key[LANGUAGE_NONE][0]['value'] = $key;
+          node_save($location);
+        }
+        else {
+          drupal_set_message(t('Exchange key not set for @location', array('@location' => $location->title)), 'warning');
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Create dining_hours cache table.
+ */
+function dining_hours_update_7101() {
+  cache_clear_all('*', 'cache', TRUE);
+  $schema['cache_dining_hours'] = drupal_get_schema_unprocessed('system', 'cache');
+  db_create_table('cache_dining_hours', $schema['cache_dining_hours']);
+}

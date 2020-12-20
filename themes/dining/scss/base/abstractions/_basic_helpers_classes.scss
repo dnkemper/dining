@@ -1,0 +1,158 @@
+/**
+* Basic helper classes.
+* @todo break these into their own partials for better maintenance.
+*/
+.container-smooth {
+  @include container-fixed;
+  max-width: $container-lg;
+}
+
+.element-invisible {
+  clip: auto;
+  height: auto;
+  overflow: auto;
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+}
+
+.anchor:target:before {
+  content: "";
+  display: block;
+  height: $header-height;
+  margin: -($header-height) 0 0; /* negative fixed header height */
+
+  // Adjust position for the Drupal toolbar.
+  // This assumes the toolbar does not overflow to a second line.
+  .toolbar & {
+    height: $toolbar-menu-height + $header-height;
+    margin-top: -($toolbar-menu-height + $header-height);
+  }
+  .toolbar-drawer & {
+    height: $toolbar-menu-and-drawer-height + $header-height;
+    margin-top: -($toolbar-menu-and-drawer-height + $header-height);
+  }
+}
+
+// Font Smoothing.
+// --------------------------------------------------
+.font-smoothing-on {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.font-smoothing-off {
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+}
+
+// Pseudo Arrows.
+// --------------------------------------------------
+.arrow-after-right {
+  &:after {
+    content:'\2192';
+    margin-left: 5px;
+  }
+}
+.arrow-before-right {
+  &:before {
+    content:'\2192';
+    margin-right: 5px;
+  }
+}
+.arrow-after-left {
+  &:after {
+    content:'\2190';
+    margin-left: 5px;
+  }
+}
+.arrow-before-left {
+  &:before {
+    content:'\2190';
+    margin-right: 5px;
+  }
+}
+.arrow-after-up {
+  &:after {
+    content:'\2191';
+    margin-left: 5px;
+  }
+}
+.arrow-before-up {
+  &:before {
+    content:'\2191';
+    margin-right: 5px;
+  }
+}
+.arrow-after-down {
+  &:after {
+    content:'\2193';
+    margin-left: 5px;
+  }
+}
+.arrow-before-down {
+  &:before {
+    content:'\2193';
+    margin-right: 5px;
+  }
+}
+
+// Background overlays and positioning.
+// --------------------------------------------------
+.pos-abs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pos-rel {
+  position: relative;
+}
+
+// See http://www.transparenttextures.com/
+.pattern-overlay {
+  background-repeat: repeat;
+
+  &.arches { background-image: url('#{$texture-path}/arches.png'); }
+  &.black-linen { background-image: url('#{$texture-path}/black-linen.png'); }
+  &.black-lozenge { background-image: url('#{$texture-path}/black-lozenge.png'); }
+  &.black-thread { background-image: url('#{$texture-path}/black-thread.png'); }
+  &.black-thread-light { background-image: url('#{$texture-path}/black-thread-light.png'); }
+  &.bright-squares { background-image: url('#{$texture-path}/bright-squares.png'); }
+  &.classy-fabric { background-image: url('#{$texture-path}/classy-fabric.png'); }
+  &.climpek { background-image: url('#{$texture-path}/climpek.png'); }
+  &.dimension { background-image: url('#{$texture-path}/dimension.png'); }
+  &.escheresque { background-image: url('#{$texture-path}/escheresque.png'); }
+  &.office { background-image: url('#{$texture-path}/office.png'); }
+  &.checkered-pattern { background-image: url('#{$texture-path}/checkered-pattern.png'); }
+  &.dots { background-image: url('#{$texture-path}/dot-pattern.png'); }
+  &.football-no-lines { background-image: url('#{$texture-path}/football-no-lines.png'); }
+  &.hexellence { background-image: url('#{$texture-path}/hexellence.png'); }
+  &.maze-black { background-image: url('#{$texture-path}/maze-black.png'); }
+  &.nami { background-image: url('#{$texture-path}/nami.png'); }
+  &.pixel-weave { background-image: url('#{$texture-path}/pixel-weave.png'); }
+  &.real-carbon-fibre { background-image: url('#{$texture-path}/real-carbon-fibre.png'); }
+  &.shattered { background-image: url('#{$texture-path}/shattered.png'); }
+  &.skulls { background-image: url('#{$texture-path}/skulls.png'); }
+  &.swirl { background-image: url('#{$texture-path}/swirl.png'); }
+  &.white-diamond-dark { background-image: url('#{$texture-path}/white-diamond-dark.png'); }
+  &.woven { background-image: url('#{$texture-path}/woven.png'); }
+}
+.bg-img {
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  min-height: 250px;
+}
+.bg-image.gray {
+  filter: url("data:image/svg+xml;utf8,&lt;svg xmlns=\'http://www.w3.org/2000/svg\'&gt;&lt;filter id=\'grayscale\'&gt;&lt;feColorMatrix type=\'matrix\' values=\'0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0\'/&gt;&lt;/filter&gt;&lt;/svg&gt;#grayscale"); /* Firefox 10+, Firefox on Android */
+  filter: gray; /* IE6-9 */
+  filter: grayscale(1);
+}
+// Opacity classes.
+@for $i from 0 through 10 {
+  .opacity-#{$i} {
+    opacity: ($i/10);
+  }
+}

@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Dining Basic Page Entity feature.
+ */
+
+include_once 'dining_basic_page_entity.features.inc';

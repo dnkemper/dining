@@ -1,0 +1,158 @@
+<?php
+/**
+ * @file
+ * Code for the Dining person feature.
+ */
+
+include_once 'dining_person.features.inc';
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dining_person_form_person_node_form_alter(&$form, &$form_state, $form_id) {
+  dining_core_attach_chosen($form);
+}
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+
+function dining_person_field_extra_fields() {
+  $extra['node']['person'] = array(
+    'display' => array(
+      'person_action_buttons' => array(
+        'label' => t('Action Buttons'),
+        'description' => t('Phone, email and help buttons.'),
+        'weight' => 99,
+      ),
+    ),
+  );
+
+  return $extra;
+}
+
+/**
+ * Implements hook_node_view().
+ */
+function dining_person_node_view($node, $view_mode, $langcode) {
+  // Get extra field info from hook_field_extra_fields().
+  $extra = dining_person_field_extra_fields();
+
+  // Check that we're supporting the node type being viewed.
+  if (empty($extra['node'][$node->type]['display'])) {
+    return;
+  }
+
+  $config = field_bundle_settings('node', $node->type);
+  foreach ($extra['node'][$node->type]['display'] as $field_name => $field_info) {
+    // Check to make sure this field is visible in this view mode.
+    if (empty($config['extra_fields']['display'][$field_name][$view_mode]['visible'])) {
+      continue;
+    }
+    switch ($field_name) {
+      case 'person_action_buttons':
+        $markup = array();
+        $markup['btn_group'] = array(
+          '#type' => 'container',
+          '#attributes' => array(
+            'class' => array(
+              'btn-group',
+              'btn-group-justified',
+            ),
+            'role' => 'group',
+            'arial-label' => 'contactActions',
+          ),
+        );
+        if (!empty($node->field_person_phone)) {
+          $value = $node->field_person_phone[LANGUAGE_NONE][0]['value'];
+          $markup['btn_group']['btn_phone'] = array(
+            '#theme' => 'link',
+            '#text' => '<i class="fa fa-phone" aria-hidden="true"></i><span class="sr-only">' . $value . '</span>',
+            '#path' => 'tel:' . str_replace('-', '', $value),
+            '#options' => array(
+              'html' => TRUE,
+              'attributes' => array(
+                'class' => array(
+                  'btn',
+                  'btn-default',
+                ),
+                'data-toggle' => 'tooltip',
+                'data-placement' => 'top',
+                'title' => $value,
+                'data-container' => 'body',
+              ),
+            ),
+          );
+        }
+        if (!empty($node->field_person_email)) {
+          $value = $node->field_person_email[LANGUAGE_NONE][0]['email'];
+          $markup['btn_group']['btn_email'] = array(
+            '#theme' => 'link',
+            '#text' => '<i class="fa fa-envelope" aria-hidden="true"></i><span class="sr-only">' . $value . '</span>',
+            '#path' => 'mailto:' . $value,
+            '#options' => array(
+              'html' => TRUE,
+              'attributes' => array(
+                'class' => array(
+                  'btn',
+                  'btn-default',
+                ),
+                'data-toggle' => 'tooltip',
+                'data-placement' => 'top',
+                'title' => $value,
+                'data-container' => 'body',
+              ),
+            ),
+          );
+        }
+        if (!empty($node->field_person_how_i_can_help)) {
+          $help_popover = array();
+          foreach ($node->field_person_how_i_can_help[LANGUAGE_NONE] as $item) {
+            $term = taxonomy_term_load($item['tid']);
+            $help_popover[$term->tid] = array(
+              '#type' => 'html_tag',
+              '#tag' => 'span',
+              '#value' => $term->name,
+              '#attributes' => array(
+                'class' => array(
+                  'label',
+                  'label-warning',
+                ),
+              ),
+            );
+          }
+          $markup['btn_group']['btn_help'] = array(
+            '#theme' => 'link',
+            '#text' => '<i class="fa fa-info" aria-hidden="true"></i><span class="sr-only">I Can Help With:</span>',
+            '#path' => '',
+            '#options' => array(
+              'fragment' => 'helpPopover',
+              'html' => TRUE,
+              'external' => TRUE,
+              'attributes' => array(
+                'class' => array(
+                  'btn',
+                  'btn-default',
+                ),
+                'a tabindex' => '0',
+                'role' => 'button',
+                'data-toggle' => 'popover',
+                'data-placement' => 'top',
+                'title' => t('I Can Help With:'),
+                'data-content' => render($help_popover),
+                'data-container' => 'body',
+                'data-html' => TRUE,
+                'data-trigger' => 'hover',
+              ),
+            ),
+          );
+        }
+
+        $node->content[$field_name] = array(
+          '#markup' => render($markup),
+        );
+        break;
+
+    }
+  }
+}

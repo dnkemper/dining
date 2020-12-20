@@ -1,0 +1,115 @@
+<?php
+
+/**
+ * @file
+ * Code for the Dining Taxonomy feature.
+ */
+
+include_once 'dining_taxonomy.features.inc';
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function dining_taxonomy_field_extra_fields()
+{
+  $extra['taxonomy_term']['allergy_and_nutrition'] = array(
+    'display' => array(
+      'allergy_and_nutrition_indicator' => array(
+        'label' => t('Indicator'),
+        'description' => t('Allergy and nutrition food indicator.'),
+        'weight' => 99,
+      ),
+    ),
+  );
+
+  return $extra;
+}
+
+/**
+ * Implements hook_taxonomy_term_view().
+ */
+function dining_taxonomy_taxonomy_term_view($term, $view_mode, $langcode) {
+  // Get extra field info from hook_field_extra_fields().
+  $extra = dining_taxonomy_field_extra_fields();
+  // Check that we're supporting the vocabulary being viewed.
+  if (empty($extra['taxonomy_term'][$term->vocabulary_machine_name]['display'])) {
+    return;
+  }
+  $config = field_bundle_settings('taxonomy_term', $term->vocabulary_machine_name);
+  foreach ($extra['taxonomy_term'][$term->vocabulary_machine_name]['display'] as $field_name => $field_info) {
+    // Check to make sure this field is visible in this view mode.
+    if (empty($config['extra_fields']['display'][$field_name][$view_mode]['visible'])) {
+      continue;
+    }
+
+    switch ($field_name) {
+      case 'allergy_and_nutrition_indicator':
+        $render = array();
+        $abbr = (!empty($term->field_an_abbreviation)) ? $term->field_an_abbreviation[LANGUAGE_NONE][0]['safe_value'] : '';
+        $bg_color = (!empty($term->field_an_background_color)) ? $term->field_an_background_color[LANGUAGE_NONE][0]['safe_value'] : '#333333';
+        $label = (!empty($term->field_an_label)) ? $term->field_an_label[LANGUAGE_NONE][0]['safe_value'] : '';
+        $square = (!empty($term->field_an_square)) ? (bool) $term->field_an_square[LANGUAGE_NONE][0]['value'] : FALSE;
+
+        $id = drupal_clean_css_identifier('indicator-' . $term->name);
+        $render['indicator'] = array(
+          '#type' => 'html_tag',
+          '#tag' => 'div',
+          '#value' => $abbr,
+          '#attributes' => array(
+            'data-toggle' => 'tooltip',
+            'title' => $label,
+            'class' => array(
+              'allergen-nutrition-indicator',
+              $id,
+            ),
+          ),
+        );
+
+        if ($square == TRUE) {
+          $render['indicator']['#attributes']['class'][] = 'indicator-square';
+          drupal_add_css(".{$id} {border-color: {$bg_color}; color: {$bg_color} !important;}", array('type' => 'inline'));
+        }
+        else {
+          drupal_add_css('.' . $id . ' {background-color: ' . $bg_color . ';}', array('type' => 'inline'));
+        }
+
+        $term->content[$field_name] = $render;
+        break;
+
+    }
+  }
+}
+
+/*
+ * Implements hook_block_info().
+ */
+function dining_taxonomy_block_info() {
+  $blocks['allergen_nutrition_legend']['info'] = t('Allergen and Nutrition Legend');
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function dining_taxonomy_block_view($delta = '') {
+  $block = array();
+
+  switch ($delta) {
+    case 'allergen_nutrition_legend':
+      $render = array();
+      $vocabulary = 'allergy_and_nutrition';
+      $vid = taxonomy_vocabulary_machine_name_load($vocabulary)->vid;
+      $terms = taxonomy_get_tree((int) $vid);
+      foreach ($terms as $t) {
+        $term = taxonomy_term_load($t->tid);
+        $render[] = entity_view('taxonomy_term', array($term), 'full');
+      }
+      $block['subject'] = t('Allergen and Nutrition Legend');
+      $block['content'] = $render;
+      break;
+
+  }
+  return $block;
+}
+

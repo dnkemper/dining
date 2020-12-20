@@ -1,0 +1,21 @@
+.footer {
+  padding: 3rem 0;
+  color: #999;
+  background-color: #212221;
+  border-top: 6px solid $brand-yellow;
+  @extend .font-smoothing-on;
+
+  a {
+    color: #fff;
+    border-bottom: 1px dotted #222;
+  }
+
+  .menu {
+    a {
+      &:hover,
+      &:focus {
+        background-color: #222;
+      }
+    }
+  }
+}

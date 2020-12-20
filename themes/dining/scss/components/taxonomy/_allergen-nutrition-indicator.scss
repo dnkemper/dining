@@ -1,0 +1,20 @@
+.allergen-nutrition-indicator {
+  width: 21px;
+  height: 21px;
+  color: #fff;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+  letter-spacing: -1px;
+  margin: 0 2px;
+
+  &.indicator-square {
+    border-radius: 0;
+    border-width: 1px;
+    border-style: solid;
+  }
+}

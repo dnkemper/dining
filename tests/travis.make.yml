@@ -1,0 +1,12 @@
+# system.make.yaml:
+api: 2
+core: 7.x
+projects:
+  drupal:
+    version: ~
+    type: core
+  sitenow:
+    type: profile
+    do_recursion: false
+    download:
+      type: file

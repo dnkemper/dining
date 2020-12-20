@@ -1,0 +1,92 @@
+.dining-hours-container {
+  ul {
+    margin: 0;
+    padding: 0;
+
+    li {
+      list-style: none;
+    }
+  }
+
+  li.dining-hours-date-container {
+    margin-bottom: 1em;
+    border-bottom: 1px dashed #ddd;
+
+    &:last-child {
+      margin-bottom: 0;
+      border-bottom: none;
+    }
+  }
+
+  .dining-hours-date-header {
+    border-radius: $border-radius-small $border-radius-small 0 0;
+    overflow: hidden;
+    font-weight: $fw-bold;
+    font-size: 1.4rem;
+  }
+
+  .dining-hours-date {
+    font-size: 1.7rem;
+  }
+
+  .interval {
+    float: right;
+    border-bottom: 3px solid #ccc;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    position: relative;
+    top: 3px;
+  }
+
+  ul.dining-hours-date-container {
+    padding: 0;
+    border-radius: 0 0 $border-radius-small $border-radius-small;
+
+    li {
+      margin: 5px 0;
+      padding: 5px 0;
+      border-bottom: 1px dotted #ccc;
+
+      .label {
+        margin-right: 1em;
+        position: relative;
+        top: -2px;
+      }
+
+      &.last {
+        border-bottom: none;
+      }
+    }
+  }
+
+  // Pickadate for hours.
+  .pickadate-wrapper {
+    margin-top: 0.5em;
+    @include box-shadow(none);
+    background-color: #d8d4ce;
+
+    &.collapsed {
+      height: auto;
+    }
+
+    legend {
+      background-color: #d8d4ce;
+      margin-bottom: 0;
+    }
+
+    .form-group {
+      input {
+        padding: 10px;
+
+        @extend .form-control;
+      }
+    }
+  }
+
+  .button-wrapper {
+    input {
+      background: transparent;
+      @include box-shadow(none);
+    }
+  }
+}

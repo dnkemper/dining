@@ -1,0 +1,163 @@
+<?php
+
+/**
+ * @file
+ * Code for Dining Menus.
+ */
+
+function dining_menus_menu() {
+  $items = array();
+
+  $items['dining-menus/ajax'] = array(
+    'type' => MENU_CALLBACK,
+    'access callback' => TRUE,
+    'page callback' => 'dining_menus_ajax',
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function dining_menus_theme() {
+  $path = drupal_get_path('module', 'dining_menus');
+
+  $themes = array(
+    'dining_menus_station' => array(
+      'path' => $path,
+      'file' => 'includes/dining_menus.station.inc',
+      'variables' => array(
+        'courses' => NULL,
+        'name' => NULL
+      ),
+    ),
+    'dining_menus_menu' => array(
+      'path' => $path,
+      'file' => 'includes/dining_menus.menu.inc',
+      'template' => 'theme/dining-menus-menu',
+      'variables' => array(
+        'menu_data' => NULL,
+        'datepicker' => NULL,
+      ),
+    ),
+  );
+
+  return $themes;
+}
+
+/**
+ * Page callback to render a marketplace menu for a given day.
+ *
+ * @param string $marketplace
+ *   Name of the marketplace.
+ * @param string $date
+ *   Date of the menu to display in YYYY-MM-DD.
+ *
+ * @return mixed
+ *
+ * @throws Exception
+ */
+function dining_menus_marketplace_menu($marketplace, $date = NULL) {
+  // Set default date to today.
+  if (empty($date)) {
+    $date = date('Y-m-d');
+  }
+  // Build date-picker form render.
+  $datepicker = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('pickadate-wrapper'),
+    ),
+    'datepicker' => array(
+      '#type' => 'textfield',
+      '#title' => t('Date'),
+      '#description' => t('View menu information for another date.'),
+      '#attributes' => array(
+        'class' => array('datepicker', 'form-control'),
+        'placeholder' => date('l, M d, Y', strtotime($date)),
+        'data-marketplace' => $marketplace,
+      ),
+      '#attached' => array(
+        'js' => array(
+          array(
+            'data' => drupal_get_path('module', 'dining_hours') . '/js/moment.min.js',
+            'type' => 'file',
+          ),
+          array(
+            'data' => drupal_get_path('module', 'dining_menus') . '/js/datepicker.js',
+            'type' => 'file',
+          ),
+        ),
+        'libraries_load' => array(
+          array('pickadate'),
+        ),
+      ),
+    ),
+  );
+
+  $endpoint = variable_get('dining_menus_endpoint', 'https://data.its.uiowa.edu/dining/menus')
+    . '/'
+    . $marketplace
+    . '?'
+    . http_build_query(array('date' => $date));
+
+  $cache_key = 'dining_menus_' . base64_encode($endpoint);
+  $data = &drupal_static(__FUNCTION__ . ':' . $cache_key);
+
+  if (!isset($data)) {
+    $cache = cache_get($cache_key);
+    if (isset($cache, $cache->data, $cache->expire) && time() < $cache->expire) {
+      $data = $cache->data;
+    }
+    else {
+      $request = drupal_http_request($endpoint);
+
+      if (isset($request->error)) {
+        if (isset($cache->data)) {
+          watchdog('dining_menus', 'Error retrieving menu data: @error. Using stale menu data.', array(
+            '@error' => $request->error,
+          ), WATCHDOG_WARNING);
+
+          $data = $cache->data;
+        }
+        else {
+          watchdog('dining_menus', 'Error retrieving menu data: @error. Unable to display menus.', array(
+            '@error' => $request->error,
+          ), WATCHDOG_ERROR);
+
+          $data = array();
+        }
+      }
+      else {
+        $data = json_decode($request->data, TRUE);
+        cache_set($cache_key, $data, 'cache', time() + 300);
+      }
+    }
+  }
+
+  $vars = array(
+    'menu_data' => $data,
+    'datepicker' => $datepicker,
+  );
+
+  return theme('dining_menus_menu', $vars);
+}
+
+/**
+ * AJAX callback.
+ *
+ * @param $marketplace
+ * @param null $date
+ */
+function dining_menus_ajax($marketplace, $date = NULL) {
+  $html = dining_menus_marketplace_menu($marketplace, $date);
+  $commands[] = ajax_command_html('#location-menu', $html);
+
+  $response = array(
+    '#type' => 'ajax',
+    '#commands' => $commands,
+  );
+
+  ajax_deliver($response);
+}

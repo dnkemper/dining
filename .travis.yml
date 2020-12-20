@@ -1,0 +1,45 @@
+sudo: false
+
+language: php
+
+php:
+  - '7.1'
+
+cache:
+  directories:
+    - $HOME/.composer/cache
+    - $HOME/.drush/cache
+
+services:
+  - mysql
+
+matrix:
+  fast_finish: true
+
+before_install:
+  - phpenv config-rm xdebug.ini
+  - composer self-update
+  - export BEHAT_PARAMS='{"extensions":{"Behat\\MinkExtension":{"base_url":"http://127.0.0.1:8080"},"Drupal\\DrupalExtension":{"drush":{"root":"/home/travis/build"}, "drupal":{"drupal_root":"/home/travis/build"}}}}'
+  - echo 'sendmail_path = /bin/true' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
+  - BUILD=$(curl -Ls -o /dev/null -w "%{url_effective}" https://github.com/its-uofiowa/sitenow_custom_profile/releases/latest | xargs basename)
+  - 'echo "      url: https://github.com/ITS-UofIowa/sitenow_custom_profile/releases/download/${BUILD}/build-sitenow.tar.gz" >> tests/travis.make.yml'
+
+install:
+  - export PATH="$HOME/.composer/vendor/bin:$PATH"
+  - export COMPOSER_MEMORY_LIMIT=-1
+  - composer global require drush/drush:8.1.17
+  - composer global require drupal/drupal-extension:^3
+  - cd ../.. && mkdir sites && mv $TRAVIS_BUILD_DIR sites/default
+
+script:
+  - drush make --yes sites/default/tests/travis.make.yml .
+  - mkdir -p ../acquia-files/sites/dining.uiowa.edu/files-private
+  - mkdir -p sites/default/files/js/wysiwyg
+  - touch sites/default/files/js/wysiwyg/wysiwyg_ckeditor_WqSjTRv7Pp9AsDbv-bKSG_4_q2qH3TMKjkTbZOkbHC4.js
+  - drush --yes site-install sitenow --db-url=mysql://root@localhost/dining --site-name=Dining
+  - drush --yes en dining_location_entity
+  - drush vset theme_default dining
+  - drush runserver --default-server=builtin 8080 &
+  - sleep 3
+  - cd sites/default/tests
+  - behat

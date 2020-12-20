@@ -1,0 +1,41 @@
+.main-header-bg {
+  padding: 2rem 0;
+
+  // Shared styles.
+  &.has-slideshow,
+  &.has-bg-img {
+    padding: 0;
+    color: #fff;
+    @extend .font-smoothing-on;
+
+    .breadcrumb-title-container {
+      background-image: linear-gradient(to right, rgba(0,0,0,0.75) 35%, transparent 60%);
+      padding: 2rem 0 1rem;
+      font-weight: $fw-semibold;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+    }
+
+    a,
+    .page-title {
+      color: #fff;
+    }
+  }
+
+  &.has-bg-img {
+    min-height: 50vmin;
+  }
+
+  .breadcrumbs {
+    font-size: 1.2rem;
+    text-transform: uppercase;
+  }
+
+  .page-title {
+    margin: 0;
+    font-weight: $fw-bold;
+    letter-spacing: -1px;
+  }
+}

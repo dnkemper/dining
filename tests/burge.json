@@ -1,0 +1,15 @@
+{
+  "Breakfast": {
+    "Burge Chefs Table": {
+      "Entree": [
+        {
+          "name": "Build Your Own Omelet",
+          "traits": [
+            "gluten",
+            "shell fish"
+          ]
+        }
+      ]
+    }
+  }
+}

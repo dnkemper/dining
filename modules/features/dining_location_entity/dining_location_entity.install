@@ -1,0 +1,175 @@
+<?php
+/**
+ * @file
+ * This file hold the install/uninstall tasks for the Location feature.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function dining_location_entity_uninstall() {
+  $fields = field_info_instances('node', 'location');
+
+  foreach ($fields as $field) {
+    field_delete_field($field->field_name);
+    field_delete_instance($field->field_name);
+  }
+
+  // Set the batch size to a high number.
+  field_purge_batch(1000);
+
+  node_type_delete('location');
+  variable_del('node_preview_location');
+  node_types_rebuild();
+  menu_rebuild();
+}
+
+/**
+ * Delete deprecated product fields, field instances and related field groups.
+ */
+function dining_location_entity_update_7200() {
+  // Revert feature to ensure fields have been removed from the features.
+  features_revert_module('dining_location_entity');
+  features_revert_module('dining_location_views');
+
+  // Delete product list field instance, base if last instance.
+  if ($instance = field_info_instance('node', 'field_location_product_list', 'location')) {
+    field_delete_instance($instance);
+  }
+  // The product field group.
+  $product_group = array(
+    'group_name' => 'group_location_products',
+    'entity_type' => 'node',
+    'bundle_name' => 'location',
+    'mode' => 'form',
+    );
+
+  $group = field_group_load_field_group($product_group['group_name'], $product_group['entity_type'], $product_group['bundle_name'], $product_group['mode']);
+  ctools_include('export');
+  field_group_group_export_delete($group, FALSE);
+
+  // Set the batch size to a high number.
+  field_purge_batch(1000);
+
+  // Clear all caches.
+  drupal_flush_all_caches();
+}
+
+/**
+ * Delete deprecated hours fields, field instances and related field groups.
+ */
+function dining_location_entity_update_7201() {
+  // Revert feature to ensure fields have been removed from the features.
+  features_revert_module('dining_location_entity');
+  features_revert_module('dining_location_views');
+
+  // Delete product list field instance, base if last instance.
+  if ($instance = field_info_instance('node', 'field_location_product_list', 'location')) {
+    field_delete_instance($instance);
+  }
+
+  // List of fields to delete.
+  $fields = array(
+    'field_location_exception_date',
+    'field_location_exception_hours',
+    'field_location_exception_title',
+    'field_location_hours',
+    'field_location_hours_exceptions',
+    );
+
+  // Delete fields and field instances.
+  foreach ($fields as $field) {
+    field_delete_field($field);
+  }
+
+  // The exception hours field group.
+  $exceptions_group = array(
+    'group_name' => 'group_location_exception_hours',
+    'entity_type' => 'node',
+    'bundle_name' => 'location',
+    'mode' => 'form',
+    );
+
+  $group = field_group_load_field_group($exceptions_group['group_name'], $exceptions_group['entity_type'], $exceptions_group['bundle_name'], $exceptions_group['mode']);
+  ctools_include('export');
+  field_group_group_export_delete($group, FALSE);
+
+  // Set the batch size to a high number.
+  field_purge_batch(1000);
+
+  // Clear all caches.
+  drupal_flush_all_caches();
+}
+
+/**
+ * De-panelize the locations entity.
+ */
+function dining_location_entity_update_7202() {
+  // Revert feature to ensure fields have been removed from the feature.
+  features_revert_module('dining_location_entity');
+
+  $panelizer_options = array (
+    'status' => 0,
+    'view modes' =>
+    array (
+      'page_manager' =>
+      array (
+        'status' => 0,
+        'default' => 0,
+        'choice' => 0,
+      ),
+      'default' =>
+      array (
+        'status' => 1,
+        'default' => 1,
+        'choice' => 0,
+      ),
+      'teaser' =>
+      array (
+        'status' => 0,
+        'default' => 0,
+        'choice' => 0,
+      ),
+    ),
+  );
+
+  // Disable panelizer for locations.
+  variable_set('panelizer_defaults_node_location', $panelizer_options);
+
+  // Clear all caches.
+  drupal_flush_all_caches();
+}
+
+/**
+ * Delete hours field group.
+ */
+function dining_location_entity_update_7203() {
+  // Revert feature to ensure fields have been removed from the features.
+  features_revert_module('dining_location_entity');
+
+  // The product field group.
+  $hours_group = array(
+    'group_name' => 'group_loc_hours',
+    'entity_type' => 'node',
+    'bundle_name' => 'location',
+    'mode' => 'form',
+    );
+
+  $group = field_group_load_field_group($hours_group['group_name'], $hours_group['entity_type'], $hours_group['bundle_name'], $product_group['mode']);
+  ctools_include('export');
+  field_group_group_export_delete($group, FALSE);
+
+  // // Set the batch size to a high number.
+  field_purge_batch(1000);
+
+  // Clear all caches.
+  drupal_flush_all_caches();
+}
+/**
+ * Delete gallery link field and revert housing_location.
+ */
+function dining_location_entity_update_7204() {
+  field_delete_field('field_location_gallery_link');
+  field_purge_batch(1000);
+  features_revert_module('dining_location_entity');
+}

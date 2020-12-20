@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Dining Common feature.
+ */
+
+include_once 'dining_common.features.inc';

@@ -1,0 +1,8 @@
+/**
+* Change styling for elements that mix pixels and ems
+* Required to utilize the REM font-sizing overrides for Bootstrap 3.
+*/
+
+pre {
+  font-size: ( $font-size-base - ($font-unit / strip-units($font-size-root)));
+}

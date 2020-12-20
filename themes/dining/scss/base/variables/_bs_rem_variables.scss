@@ -1,0 +1,51 @@
+/**
+* Use em or rem font-size in Bootstrap 3
+* Ported from Less version here: https://gist.github.com/jasny/9731895
+*/
+$font-size-root: 10px;
+$font-unit: 1.6rem; // Pick em or rem here
+
+// Convert all variables to em
+$font-size-base: 1 * $font-unit;
+$font-size-large: 1.25 * $font-unit;
+$font-size-small: 0.85 * $font-unit;
+
+$font-size-h1: 3.4rem;
+$font-size-h2: 2.8rem;
+$font-size-h3: 2.2rem;
+$font-size-h4: 2rem;
+$font-size-h5: 1.8rem;
+$font-size-h6: $font-unit;
+
+$jumbotron-font-size: 2.1rem;
+
+$line-height-computed: ($font-size-base * $line-height-base);
+
+$padding-base-vertical: ((6px / $font-size-root) * $font-unit);
+$padding-base-horizontal: ((12px / $font-size-root) * $font-unit);
+
+$padding-large-vertical: ((10px / $font-size-root) * $font-unit);
+$padding-large-horizontal: ((16px / $font-size-root) * $font-unit);
+
+$padding-small-vertical: ((5px / $font-size-root) * $font-unit);
+$padding-small-horizontal: ((10px / $font-size-root) * $font-unit);
+
+$padding-xs-vertical: ((1px / $font-size-root) * $font-unit);
+$padding-xs-horizontal: ((5px / $font-size-root) * $font-unit);
+
+$border-radius-base: ((0px / $font-size-root) * $font-unit);
+$border-radius-large: ((0px / $font-size-root) * $font-unit);
+$border-radius-small: ((0px / $font-size-root) * $font-unit);
+
+$caret-width-base: ((4px / $font-size-root) * $font-unit);
+$caret-width-large: ((5px / $font-size-root) * $font-unit);
+
+$table-cell-padding: ((8px / $font-size-root) * $font-unit);
+$table-condensed-cell-padding: ((5px / $font-size-root) * $font-unit);
+
+//** Default `.form-control` height
+$input-height-base: ($line-height-computed + ($padding-base-vertical * 2));
+//** Large `.form-control` height
+$input-height-large: (($font-size-large * $line-height-large) + ($padding-large-vertical * 2));
+//** Small `.form-control` height
+$input-height-small: (($font-size-small * $line-height-small) + ($padding-small-vertical * 2));

@@ -1,0 +1,39 @@
+.view-display-id-locations_block {
+  .node-teaser {
+    margin-bottom: 3rem;
+  }
+
+  #locationMap {
+    position: relative;
+    margin: 0px calc(((100vw - 1170px) / -2) - 70px) 20px;
+  }
+
+  .view-filters {
+    padding-top: 1rem;
+    text-align: center;
+
+    label {
+      @extend .element-invisible;
+    }
+  }
+
+  // BEF styles for links.
+  .form-item-field-location-type-tid .bef-select-as-links {
+    .form-type-bef-link {
+      display: inline-block;
+
+      a {
+        @extend .btn;
+        @extend .btn-default;
+
+        &:before {
+          margin-right: 0.5em;
+        }
+      }
+    }
+
+    .form-item-edit-field-location-type-tid-5 a:before { @include fa(coffee); }
+    .form-item-edit-field-location-type-tid-6 a:before { @include fa(shopping-cart); }
+    .form-item-edit-field-location-type-tid-7 a:before { @include fa(cutlery); }
+  }
+}

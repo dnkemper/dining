@@ -1,0 +1,13 @@
+<?php
+/**
+ * @file
+ * Install tasks.
+ */
+
+/**
+* Delete field_general_page_banner_image field.
+*/
+function dining_basic_page_entity_update_7100() {
+ field_delete_field('field_general_page_banner_image');
+ field_purge_batch(5);
+}

@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the uhd_superfish feature.
+ */
+
+include_once 'uhd_superfish.features.inc';

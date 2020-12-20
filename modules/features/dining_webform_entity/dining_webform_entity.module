@@ -1,0 +1,22 @@
+<?php
+/**
+ * @file
+ * Code for the Dining Webform Entity feature.
+ */
+
+include_once 'dining_webform_entity.features.inc';
+
+/*
+* Implements hook_node_insert()
+*
+* Automatically add captchas to webform nodes on node creation
+* Borrowed from http://drupal.org/node/669348#comment-6026516
+*/
+function dining_webform_entity_node_insert($node) {
+  if (module_exists('webform') && module_exists('captcha') &&
+      in_array($node->type, webform_variable_get('webform_node_types_primary')) &&
+      $node->webform <> webform_node_defaults() &&
+      module_load_include('inc', 'captcha', 'captcha')) {
+    captcha_set_form_id_setting('webform_client_form_' . $node->nid, 'default');
+  }
+}

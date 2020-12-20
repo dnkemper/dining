@@ -1,0 +1,8 @@
+// Strip Units
+// -----------------------------------------------------------------------------
+//Modified to work with _bootstrap-em.scss
+
+// From : http://stackoverflow.com/a/12335841/1339426
+@function strip-units($number) {
+  @return $number / ($number * 0 + 1);
+}

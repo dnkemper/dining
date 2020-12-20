@@ -1,0 +1,7 @@
+name = Dining Core
+description = General custom functionality for the dining site
+core = 7.x
+package = Dining
+version = 7.x-2.0
+project = dining_core
+dependencies[] = uiowa_events

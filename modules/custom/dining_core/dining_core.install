@@ -1,0 +1,1273 @@
+<?php
+/**
+ * @file
+ * This file holds the install/uninstall logic for dining_core, as well as update
+ * scripts.
+ */
+
+/**
+ * Implements hook_update_dependencies().]
+ */
+function dining_core_update_dependencies() {
+  // Indicate that the dining_cpre_update_7202() function provided by this
+  // module must run after the dining_location_entity_update_7200() function
+  // provided by the 'dining_location_entity' module.
+  $dependencies['dining_core'][7202] = array(
+    'dining_location_entity' => 7200,
+  );
+  return $dependencies;
+}
+
+/**
+ * Set allowed panels layouts initially to Panopoly only. Further changes can be
+ * done through the interface.
+ */
+function dining_core_update_7100(&$sandbox) {
+  variable_set('panels_page_allowed_layouts', 'O:22:"panels_allowed_layouts":4:{s:9:"allow_new";b:1;s:11:"module_name";s:11:"panels_page";s:23:"allowed_layout_settings";a:53:{s:8:"flexible";b:0;s:14:"twocol_stacked";b:0;s:13:"twocol_bricks";b:0;s:6:"twocol";b:0;s:25:"threecol_33_34_33_stacked";b:0;s:17:"threecol_33_34_33";b:0;s:25:"threecol_25_50_25_stacked";b:0;s:17:"threecol_25_50_25";b:0;s:6:"onecol";b:0;s:9:"two_brick";b:0;s:9:"two_66_33";b:0;s:6:"two_50";b:0;s:9:"two_33_66";b:0;s:17:"three_inset_right";b:0;s:16:"three_inset_left";b:0;s:14:"three_50_25_25";b:0;s:10:"three_3x33";b:0;s:14:"three_25_50_25";b:0;s:14:"three_25_25_50";b:0;s:8:"six_6x16";b:0;s:3:"one";b:0;s:9:"four_4x25";b:0;s:9:"five_5x20";b:0;s:6:"whelan";b:1;s:12:"webb_flipped";b:1;s:5:"sutro";b:1;s:13:"selby_flipped";b:1;s:5:"selby";b:1;s:17:"sanderson_flipped";b:1;s:9:"sanderson";b:1;s:4:"pond";b:1;s:6:"phelan";b:1;s:15:"moscone_flipped";b:1;s:7:"moscone";b:1;s:5:"melon";b:1;s:8:"mccoppin";b:1;s:9:"its_front";b:1;s:5:"homly";b:1;s:15:"hewston_flipped";b:1;s:7:"hewston";b:1;s:8:"harrison";b:1;s:6:"harris";b:1;s:5:"geary";b:1;s:12:"burr_flipped";b:1;s:4:"burr";b:1;s:22:"bryant_flipped_flipped";b:1;s:6:"bryant";b:1;s:5:"brown";b:1;s:15:"brenham_flipped";b:1;s:7:"brenham";b:1;s:6:"boxton";b:1;s:16:"bartlett_flipped";b:1;s:8:"bartlett";b:1;}s:10:"form_state";N;}');
+}
+
+/**
+ * Set initial configuration and disable footer block.
+ */
+function dining_core_update_7200() {
+
+  // Enable and set default the new theme.
+  theme_enable(array('dining_omega'));
+  variable_set('theme_default', 'dining_omega');
+
+  // Enable new homepage, et all.
+  module_enable(array('dining_page_manager_pages', 'uhd_superfish'));
+  variable_set('site_frontpage', 'home');
+
+  // Bootstrap needs a higher version of jquery.
+  variable_set('jquery_update_jquery_version', '1.10');
+
+  // New promos will enable. Old promos name will change. Revert old feature.
+  features_revert_module('dining_promotion_entity');
+
+  // Delete the old homepage node.
+  node_delete(1115);
+
+  // Disable the old footer block.
+  db_update('block')
+    ->fields(array(
+        'status' => '0',
+        'region' => '-1'
+      )
+    )
+    ->condition('module', 'block')
+    ->condition('delta', '1')
+    ->condition('theme', 'dining_omega')
+    ->execute();
+
+  // Disable the location_views block.
+  db_update('block')
+    ->fields(array(
+        'status' => '0',
+        'region' => '-1'
+      )
+    )
+    ->condition('module', 'dining_location_views')
+    ->condition('delta', 'location_filters')
+    ->condition('theme', 'dining_omega')
+    ->execute();
+
+  // Disable the main menu block.
+  db_update('block')
+    ->fields(array(
+        'status' => '0',
+        'region' => '-1'
+      )
+    )
+    ->condition('module', 'system')
+    ->condition('delta', 'main-menu')
+    ->condition('theme', 'dining_omega')
+    ->execute();
+
+  drupal_flush_all_caches();
+
+  // Enable superfish menu.
+  db_update('block')
+    ->fields(array(
+        'status' => 1,
+        'region' => 'navigation'
+      )
+    )
+    ->condition('module', 'superfish')
+    ->condition('delta', '1')
+    ->condition('theme', 'dining_omega')
+    ->execute();
+
+  // Start tracking permissions in code.
+  module_enable(array('dining_permissions'));
+
+  $modules_to_remove = array('typekit_api', 'fontyourface_ui', 'fontyourface');
+
+  // Disable typekit_api, fontyourface, fontyourface_ui.
+  module_disable($modules_to_remove, FALSE);
+
+  // Uninstall typekit_api, fontyourface, fontyourface_ui.
+  drupal_uninstall_modules($modules_to_remove, FALSE);
+
+  drupal_flush_all_caches();
+
+}
+
+/**
+ * Swap overlay for escape admin.
+ */
+function dining_core_update_7201() {
+
+  // Disable overlay.
+  module_disable(array('overlay'), FALSE);
+
+  // Uninstall overlay.
+  drupal_uninstall_modules(array('overlay'), FALSE);
+
+  // Enable escape admin.
+  module_enable(array('escape_admin'));
+
+  drupal_flush_all_caches();
+}
+
+/**
+ * Delete old promotions and product taxonomy.
+ */
+function dining_core_update_7202() {
+
+  // Get all promotion nodes.
+  $query = new EntityFieldQuery();
+  $result = $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'promotion')
+    ->execute();
+
+  // Delete all promotion nodes.
+  node_delete_multiple(array_keys($result['node']));
+
+  $modules = array('dining_promotion_views', 'dining_promotion_entity');
+
+  // Disable promotions.
+  module_disable($modules, FALSE);
+
+  // Uninstall promotions.
+  drupal_uninstall_modules($modules, FALSE);
+
+  // Delete the promotion content type.
+  node_type_delete('promotion');
+
+  // Disable product taxonomy feature.
+  module_disable(array('dining_product_taxonomy'), FALSE);
+
+  // Uninstall product taxonomy feature.
+  drupal_uninstall_modules(array('dining_product_taxonomy'), FALSE);
+
+  // Delete the 'Product' taxonomy vocabulary.
+  $vid = taxonomy_vocabulary_machine_name_load('product')->vid;
+  taxonomy_vocabulary_delete($vid);
+
+  // Set the batch size to a high number.
+  field_purge_batch(1000);
+
+  drupal_flush_all_caches();
+}
+
+/**
+ * Enable dining_hours module and revert dining_location_entity.
+ */
+function dining_core_update_7203() {
+  module_enable(array('dining_hours'));
+  features_revert_module('dining_location_entity');
+}
+
+/**
+ * Create the site_contact variable.
+ */
+function dining_core_update_7204() {
+  $contact = array (
+    'value' => '<p><a href="mailto:dining@uiowa.edu">dining@uiowa.edu</a></p><p><a href="tel:319-353-2908">319-353-2908</a><p>',
+    'format' => 'filtered_html',
+  );
+
+  variable_set('site_contact', $contact);
+}
+
+/**
+ * Uninstall more modules.
+ */
+function dining_core_update_7205() {
+
+  // We cannot just run a module_disable on the search module, because of class
+  // dependencies.
+  db_update('system')
+    ->fields(array('status' => 0))
+    ->condition('name', 'search')
+    ->condition('type', 'module')
+    ->execute();
+  views_invalidate_cache();
+  cache_clear_all();
+
+  $modules = array(
+    'block_class',
+    'color',
+    'custom_pub',
+    'ds_extras',
+    'ds',
+    'flexslider_views',
+    'flexslider',
+    'help',
+    'value_is',
+    'jquery_ui_multiselect',
+    'menu_position',
+    'office_hours',
+    'panels_style_collapsible',
+    'php',
+    'scheduler',
+  );
+
+  // Disable modules.
+  module_disable($modules, FALSE);
+
+  // Uninstall modules.
+  drupal_uninstall_modules($modules, FALSE);
+
+  drupal_flush_all_caches();
+}
+
+/**
+ * Remove unused vocabularies leftover from articles and events.
+ */
+function dining_core_update_7206() {
+  // Housing LLCs vocabulary.
+  taxonomy_vocabulary_delete(9);
+
+  // Housing Locations vocabulary.
+  taxonomy_vocabulary_delete(10);
+
+  // Set the batch size to a high number.
+  field_purge_batch(1000);
+}
+
+/**
+ * Disable deprecated dining.uiowa.edu sub-theme.
+ */
+function dining_core_update_7207() {
+  $themes = array('dining');
+  theme_disable($themes, FALSE);
+  drupal_flush_all_caches();
+}
+
+/**
+ * Enable UHD WYSIWYG.
+ */
+function dining_core_update_7208() {
+  module_enable(array('uhd_wysiwyg'));
+  features_revert_module('uhd_wysiwyg');
+  drupal_flush_all_caches();
+}
+
+/**
+ * Enable Dining Blog.
+ */
+function dining_core_update_7209() {
+  // Move the masquerade block.
+  db_update('block')
+    ->fields(array(
+        'region' => 'content',
+        'weight' => 10
+      )
+    )
+    ->condition('module', 'masquerade')
+    ->condition('delta', 'masquerade')
+    ->condition('theme', 'dining_omega')
+    ->execute();
+
+  module_enable(array('dining_blog_views'));
+
+  drupal_flush_all_caches();
+
+  // Move the blog archive block to the second sidebar.
+  db_update('block')
+    ->fields(array(
+        'pages' => 'blog*',
+        'region' => 'sidebar_second',
+        'status' => '1',
+        'visibility' => '1',
+        'weight' => '-10'
+      )
+    )
+    ->condition('module', 'views')
+    ->condition('delta', 'blog-block')
+    ->condition('theme', 'dining_omega')
+    ->execute();
+
+  // Move the blog categories block to the second sidebar.
+  db_update('block')
+    ->fields(array(
+        'pages' => 'blog*',
+        'region' => 'sidebar_second',
+        'status' => '1',
+        'visibility' => '1',
+        'weight' => '-15'
+      )
+    )
+    ->condition('module', 'views')
+    ->condition('delta', 'blog_categories-block')
+    ->condition('theme', 'dining_omega')
+    ->execute();
+
+  $tags = taxonomy_vocabulary_machine_name_load('tags');
+  taxonomy_vocabulary_delete($tags->vid);
+
+  features_revert_module('dining_users');
+  features_revert_module('dining_permissions');
+}
+
+/**
+ * Enable webmasters to add roles to users.
+ */
+function dining_core_update_7210() {
+
+  module_enable(array('sitenow_user_create'));
+
+  drupal_flush_all_caches();
+
+  features_revert_module('dining_users');
+  features_revert_module('dining_permissions');
+}
+
+/**
+ * Granularize caching.
+ */
+function dining_core_update_7211() {
+
+  module_enable(array('ape'));
+
+  // Disable cacheexclude.
+  module_disable(array('cacheexclude'), FALSE);
+
+  // Uninstall cacheexclude.
+  drupal_uninstall_modules(array('cacheexclude'), FALSE);
+}
+
+/**
+ * Enable dining api v2.
+ */
+function dining_core_update_7212() {
+
+  // Delete api webform that was never used.
+  node_delete(2910);
+
+  // Enable dining_api module.
+  module_enable(array('dining_api'));
+
+  variable_set('restful_page_cache', 1);
+}
+
+/**
+ * Enable mindin theme.
+ */
+function dining_core_update_7213() {
+  theme_enable(array('mindin'));
+}
+
+/**
+ * Disable blocks for mindin.
+ */
+function dining_core_update_7214() {
+  db_update('block')
+    ->fields(array(
+        'status' => '0',
+        'region' => '-1'
+      )
+    )
+    ->condition('module', 'views')
+    ->condition('delta', 'blog_categories-block')
+    ->condition('theme', 'mindin')
+    ->execute();
+
+  db_update('block')
+    ->fields(array(
+        'status' => '0',
+        'region' => '-1'
+      )
+    )
+    ->condition('module', 'superfish')
+    ->condition('delta', '1')
+    ->condition('theme', 'mindin')
+    ->execute();
+
+  db_update('block')
+    ->fields(array(
+        'status' => '0',
+        'region' => '-1'
+      )
+    )
+    ->condition('module', 'views')
+    ->condition('delta', 'blog-block')
+    ->condition('theme', 'mindin')
+    ->execute();
+
+  db_update('block')
+    ->fields(array(
+        'status' => '0',
+        'region' => '-1'
+      )
+    )
+    ->condition('module', 'system')
+    ->condition('delta', 'help')
+    ->condition('theme', 'mindin')
+    ->execute();
+
+  db_update('block')
+    ->fields(array(
+        'status' => '0',
+        'region' => '-1'
+      )
+    )
+    ->condition('module', 'workbench')
+    ->condition('delta', 'block')
+    ->condition('theme', 'mindin')
+    ->execute();
+
+  db_update('block')
+    ->fields(array(
+        'status' => '0',
+        'region' => '-1'
+      )
+    )
+    ->condition('module', 'masquerade')
+    ->condition('delta', 'masquerade')
+    ->condition('theme', 'mindin')
+    ->execute();
+
+  drupal_flush_all_caches();
+}
+
+/**
+ * Enable dining_signage.
+ */
+function dining_core_update_7215() {
+  module_enable(array('dining_signage'));
+}
+
+/**
+ * Enable dining_signage.
+ */
+function dining_core_update_7216() {
+  $modules = array(
+    'slick',
+    'focal_point',
+    'dining_menu_board_slideshow_entity',
+  );
+  module_enable($modules);
+}
+
+/**
+ * Append dining signage URLs to APE alternative cache time config.
+ */
+function dining_core_update_7217() {
+  $ape = variable_get('ape_alternatives');
+  $ape .= "\r\ndining-signage/*";
+  variable_set('ape_alternatives', $ape);
+}
+
+/**
+ * Exclude dining signage URLs from Google Analytics tracking.
+ */
+function dining_core_update_7218() {
+  $ga = variable_get('googleanalytics_pages');
+  $ga .= "\r\ndining-signage/*";
+  variable_set('googleanalytics_pages', $ga);
+}
+
+/**
+ * Exclude dining signage URLs from search engine crawling.
+ */
+function dining_core_update_7219() {
+  $robots = variable_get('robotstxt');
+  $robots .= "\r\nDisallow: /dining-signage/";
+  variable_set('robotstxt', $robots);
+}
+
+/**
+ * Update permissions for market_place_food_item.
+ */
+function dining_core_update_7220() {
+  $role = user_role_load_by_name('food menu manager');
+  $rid = $role->rid;
+  user_role_grant_permissions($rid, array(
+    'create market_place_food_item content',
+    'edit any market_place_food_item content',
+  ));
+}
+
+/**
+ * Enable and configure uhd_footer module.
+ */
+function dining_core_update_7221() {
+  module_enable(array('uhd_footer', 'fontawesome_menu'));
+
+  // Create social media menu.
+  $menu = array();
+  $menu['menu_name'] = "menu-social-media";
+  $menu['title'] = "Social Media";
+  $menu['description'] = "<em>Social Media</em> menu links";
+  menu_save($menu);
+
+  // Create footer menu.
+  $menu = array();
+  $menu['menu_name'] = "menu-footer";
+  $menu['title'] = "Footer";
+  $menu['description'] = "The <em>footer menu</em> is used for secondary links, shown in the footer area of the site.";
+  menu_save($menu);
+
+  // Set vars.
+  variable_set('uhd_footer_custom_menu', 'menu-footer');
+  variable_set('uhd_footer_social_media_menu', 'menu-social-media');
+  variable_del('site_contact');
+}
+
+/**
+ * Clear all caches since local modules were removed.
+ */
+function dining_core_update_7222() {
+  drupal_flush_all_caches();
+}
+
+/**
+ * Uninstall dining_api.
+ */
+function dining_core_update_7223() {
+  $modules = array('dining_api', 'restful', 'plug', 'registry_autoload');
+  module_disable($modules);
+  drupal_uninstall_modules($modules);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function dining_core_uninstall() {
+  variable_del('site_contact');
+}
+
+/**
+ * Revert dining_location_entity and delete open menu field.
+ */
+function dining_core_update_7224() {
+  features_revert_module('dining_location_entity');
+  field_delete_field('field_location_open_menu_key');
+
+  $group = field_group_load_field_group('group_loc_retail_menu', 'node', 'location', 'form');
+  ctools_include('export');
+  field_group_group_export_delete($group, FALSE);
+
+  field_purge_batch(100);
+}
+
+/**
+ * Revert uhd_superfish.
+ */
+function dining_core_update_7225() {
+  features_revert_module('uhd_superfish');
+}
+
+/**
+ * Remove menu related modules.
+ */
+function dining_core_update_7226() {
+  registry_rebuild();
+  $disable_1 = array(
+    'dining_market_place_food_item_feeds',
+    'dining_market_place_food_item_views',
+    'dining_market_place_menu_views',
+    'dining_permissions',
+    'dining_signage',
+  );
+  $disable_2 = array(
+    'dining_market_place_menu_entity',
+  );
+  $disable_3 = array(
+    'dining_market_place_food_item_entity',
+  );
+  module_disable($disable_1);
+  drupal_uninstall_modules($disable_1);
+  module_disable($disable_2);
+  drupal_uninstall_modules($disable_2);
+  module_disable($disable_3);
+  drupal_uninstall_modules($disable_3);
+}
+
+/**
+ * Remove menu related content types.
+ */
+function dining_core_update_7227() {
+  $ctt = array('market_place_food_item', 'market_place_menu');
+  foreach ($ctt as $machine_name) {
+    $results = db_select('node', 'n')
+      ->fields('n', array('nid'))
+      ->condition('type', array($machine_name), 'IN')
+      ->execute();
+
+    foreach ($results as $result) {
+      $nids[] = $result->nid;
+    }
+    if (!empty($nids)) {
+      node_delete_multiple($nids);
+    }
+    node_type_delete($machine_name);
+    node_types_rebuild();
+  }
+}
+
+/**
+ * Enable dining_menus custom module.
+ */
+function dining_core_update_7228() {
+  module_enable(array('dining_menus'));
+}
+
+/**
+ * Clean up modules.
+ */
+function dining_core_update_7229() {
+  $disable_1 = array(
+    'calendar',
+    'workbench_media',
+    'feeds_tamper',
+  );
+  module_disable($disable_1);
+  drupal_uninstall_modules($disable_1);
+  $disable_2 = array(
+    'workbench',
+    'feeds',
+  );
+  module_disable($disable_2);
+  drupal_uninstall_modules($disable_2);
+  $disable_3 = array(
+    'job_scheduler',
+  );
+  module_disable($disable_3);
+  drupal_uninstall_modules($disable_3);
+}
+
+/**
+ * Remove slideshow menu cct.
+ */
+function dining_core_update_7230() {
+  $disable = array('dining_menu_board_slideshow_entity');
+  module_disable($disable);
+  drupal_uninstall_modules($disable);
+
+  $machine_name = 'menu_board_slideshow';
+
+  $results = db_select('node', 'n')
+    ->fields('n', array('nid'))
+    ->condition('type', array($machine_name), 'IN')
+    ->execute();
+
+  foreach ($results as $result) {
+    $nids[] = $result->nid;
+  }
+  if (!empty($nids)) {
+    node_delete_multiple($nids);
+  }
+  node_type_delete($machine_name);
+  node_types_rebuild();
+}
+
+/**
+ * Create allergen and nutrition terms.
+ */
+function dining_core_update_7231() {
+  $vocabulary = 'allergy_and_nutrition';
+  $vid = taxonomy_vocabulary_machine_name_load($vocabulary)->vid;
+
+  $new_term = new stdClass();
+  $new_term->name = 'wheat';
+  $new_term->vid = $vid;
+  $new_term->field_an_label[LANGUAGE_NONE][0]['value'] = 'Contains Wheat';
+  $new_term->field_an_abbreviation[LANGUAGE_NONE][0]['value'] = 'W';
+  $new_term->field_an_background_color[LANGUAGE_NONE][0]['value'] = '#f2ce00';
+  taxonomy_term_save($new_term);
+
+  $new_term = new stdClass();
+  $new_term->name = 'gluten';
+  $new_term->vid = $vid;
+  $new_term->field_an_label[LANGUAGE_NONE][0]['value'] = 'Contains Gluten';
+  $new_term->field_an_abbreviation[LANGUAGE_NONE][0]['value'] = 'G';
+  $new_term->field_an_background_color[LANGUAGE_NONE][0]['value'] = '#56344a';
+  taxonomy_term_save($new_term);
+
+  $new_term = new stdClass();
+  $new_term->name = 'milk';
+  $new_term->vid = $vid;
+  $new_term->field_an_label[LANGUAGE_NONE][0]['value'] = 'Contains Milk';
+  $new_term->field_an_abbreviation[LANGUAGE_NONE][0]['value'] = 'M';
+  $new_term->field_an_background_color[LANGUAGE_NONE][0]['value'] = '#00b8bc';
+  taxonomy_term_save($new_term);
+
+  $new_term = new stdClass();
+  $new_term->name = 'eggs';
+  $new_term->vid = $vid;
+  $new_term->field_an_label[LANGUAGE_NONE][0]['value'] = 'Contains Eggs';
+  $new_term->field_an_abbreviation[LANGUAGE_NONE][0]['value'] = 'E';
+  $new_term->field_an_background_color[LANGUAGE_NONE][0]['value'] = '#f48b1e';
+  taxonomy_term_save($new_term);
+
+  $new_term = new stdClass();
+  $new_term->name = 'shell fish';
+  $new_term->vid = $vid;
+  $new_term->field_an_label[LANGUAGE_NONE][0]['value'] = 'Contains Shell Fish';
+  $new_term->field_an_abbreviation[LANGUAGE_NONE][0]['value'] = 'SF';
+  $new_term->field_an_background_color[LANGUAGE_NONE][0]['value'] = '#d11f35';
+  taxonomy_term_save($new_term);
+
+  $new_term = new stdClass();
+  $new_term->name = 'fish';
+  $new_term->vid = $vid;
+  $new_term->field_an_label[LANGUAGE_NONE][0]['value'] = 'Contains Fish';
+  $new_term->field_an_abbreviation[LANGUAGE_NONE][0]['value'] = 'F';
+  $new_term->field_an_background_color[LANGUAGE_NONE][0]['value'] = '#00182f';
+  taxonomy_term_save($new_term);
+
+  $new_term = new stdClass();
+  $new_term->name = 'peanuts';
+  $new_term->vid = $vid;
+  $new_term->field_an_label[LANGUAGE_NONE][0]['value'] = 'Contains Peanuts';
+  $new_term->field_an_abbreviation[LANGUAGE_NONE][0]['value'] = 'P';
+  $new_term->field_an_background_color[LANGUAGE_NONE][0]['value'] = '#004663';
+  taxonomy_term_save($new_term);
+
+  $new_term = new stdClass();
+  $new_term->name = 'tree nuts';
+  $new_term->vid = $vid;
+  $new_term->field_an_label[LANGUAGE_NONE][0]['value'] = 'Contains Tree Nuts';
+  $new_term->field_an_abbreviation[LANGUAGE_NONE][0]['value'] = 'TN';
+  $new_term->field_an_background_color[LANGUAGE_NONE][0]['value'] = '#ee562d';
+  taxonomy_term_save($new_term);
+
+  $new_term = new stdClass();
+  $new_term->name = 'soy';
+  $new_term->vid = $vid;
+  $new_term->field_an_label[LANGUAGE_NONE][0]['value'] = 'Contains Soy';
+  $new_term->field_an_abbreviation[LANGUAGE_NONE][0]['value'] = 'S';
+  $new_term->field_an_background_color[LANGUAGE_NONE][0]['value'] = '#82b362';
+  taxonomy_term_save($new_term);
+
+  $new_term = new stdClass();
+  $new_term->name = 'vegan';
+  $new_term->vid = $vid;
+  $new_term->field_an_label[LANGUAGE_NONE][0]['value'] = 'Item Is Vegan';
+  $new_term->field_an_abbreviation[LANGUAGE_NONE][0]['value'] = 'V';
+  $new_term->field_an_background_color[LANGUAGE_NONE][0]['value'] = '#2ea36c';
+  taxonomy_term_save($new_term);
+
+  $new_term = new stdClass();
+  $new_term->name = 'vegetarian';
+  $new_term->vid = $vid;
+  $new_term->field_an_label[LANGUAGE_NONE][0]['value'] = 'Item Is Vegetarian';
+  $new_term->field_an_abbreviation[LANGUAGE_NONE][0]['value'] = 'VG';
+  $new_term->field_an_background_color[LANGUAGE_NONE][0]['value'] = '#017351';
+  taxonomy_term_save($new_term);
+}
+
+/**
+ * Enable sitenow_maps.
+ */
+function dining_core_update_7232() {
+  module_enable(array('sitenow_maps'));
+}
+
+/**
+ * Enable dining theme, disable footer block and enable superfish menu.
+ */
+function dining_core_update_7233() {
+  theme_enable(array('dining'));
+  variable_set('theme_default', 'dining');
+
+  $settings = variable_get('theme_dining_settings');
+  $settings['toggle_logo'] = FALSE;
+  $settings['toggle_slogan'] = TRUE;
+  variable_set('theme_dining_settings', $settings);
+
+  // Disable the old footer block.
+  db_update('block')
+    ->fields(array(
+        'status' => '0',
+        'region' => '-1'
+      )
+    )
+    ->condition('module', 'block')
+    ->condition('delta', '1')
+    ->condition('theme', 'dining')
+    ->execute();
+
+    drupal_flush_all_caches();
+
+  // Enable superfish menu.
+  db_update('block')
+    ->fields(array(
+        'status' => 1,
+        'region' => 'main_nav'
+      )
+    )
+    ->condition('module', 'superfish')
+    ->condition('delta', '1')
+    ->condition('theme', 'dining')
+    ->execute();
+
+    drupal_flush_all_caches();
+}
+
+
+/**
+ * Enable sitenow paragraphs and all submodules.
+ */
+function dining_core_update_7234() {
+  module_enable(array(
+    'sitenow_paragraphs',
+    'snp_accordion',
+    'snp_image_gallery',
+    'snp_accordion_item',
+    'snp_block',
+    'snp_card',
+    'snp_cards',
+    'snp_map',
+    'snp_map_mp',
+    'snp_section',
+    'snp_textarea',
+  ));
+
+  features_revert_module('dining_common');
+  features_revert_module('dining_basic_page_entity');
+  features_revert_module('snp_card');
+  features_revert_module('snp_image_gallery');
+  features_revert_module('snp_map');
+  features_revert_module('snp_section');
+
+  module_enable(array('dining_paragraphs'));
+  features_revert_module('dining_paragraphs');
+}
+
+/**
+ * Enable and configure uhd_footer module.
+ */
+function dining_core_update_7235() {
+  module_enable(array('uhd_footer'));
+
+  // Create social media menu.
+  $menu = array();
+  $menu['menu_name'] = "menu-social-media";
+  $menu['title'] = "Social Media";
+  $menu['description'] = "<em>Social Media</em> menu links";
+  menu_save($menu);
+
+  // Create footer menu.
+  $menu = array();
+  $menu['menu_name'] = "menu-footer";
+  $menu['title'] = "Footer";
+  $menu['description'] = "The <em>footer menu</em> is used for secondary links, shown in the footer area of the site.
+";
+  menu_save($menu);
+
+  // Set vars.
+  variable_set('uhd_footer_custom_menu', 'menu-footer');
+  variable_set('uhd_footer_social_media_menu', 'menu-social-media');
+
+  variable_set('uhd_footer_contact_us', array(
+   'value' => '<p>Contact info goes here.</p>',
+   'format' => 'filtered_html',
+  ));
+}
+
+/**
+ * Revert dining_location_entity and delete callout link field.
+ */
+function dining_core_update_7236() {
+  features_revert_module('dining_location_entity');
+  field_delete_field('field_location_callout_link');
+  field_delete_field('field_location_image');
+  field_delete_field('field_location_flickr_set');
+  field_delete_field('field_location_promo_reference');
+
+  field_purge_batch(100);
+}
+
+/**
+ * Update the site slogan and use the default 404 page.
+ */
+function dining_core_update_7237() {
+  variable_set('site_slogan', 'University Housing and Dining');
+  variable_set('site_404', NULL);
+}
+
+/**
+ * Enable sitenow_wysiwyg_bonus_pack module.
+ */
+function dining_core_update_7238() {
+  module_enable(array('sitenow_wysiwyg_bonus_pack'));
+}
+
+/**
+ * Disable PHP text format.
+ */
+function dining_core_update_7239() {
+  $formats = filter_formats();
+  $formats['php_code']->status = 0;
+  filter_format_save($formats['php_code']);
+}
+
+/**
+ * Create new frontpage node.
+ */
+function dining_core_update_7240() {
+  // Create frontpage node.
+  $node = new stdClass();
+  $node->title = "Frontpage";
+  $node->type = "page";
+  node_object_prepare($node);
+  $node->language = LANGUAGE_NONE;
+  $node->uid = 1;
+  $node->status = 1;
+  node_save($node);
+
+  // Main.
+  $paragraph = new ParagraphsItemEntity(array('field_name' => 'field_snp_content_blocks', 'bundle' => 'snp_section'));
+  $paragraph->is_new = TRUE;
+  $paragraph->setHostEntity('node', $node);
+  $paragraph->field_snp_section_view_mode[LANGUAGE_NONE][0]['value'] = 'snp_section_full_width_background';
+  $paragraph->field_snp_section_overlay_op[LANGUAGE_NONE][0]['value'] = '4';
+  $paragraph->field_snp_section_pattern_op[LANGUAGE_NONE][0]['value'] = '4';
+  $paragraph->field_snp_section_container[LANGUAGE_NONE][0]['value'] = 'container-small';
+  $paragraph->field_snp_section_admin_title[LANGUAGE_NONE][0]['value'] = 'Main';
+  $paragraph->field_snp_section_body[LANGUAGE_NONE][0]['value'] = <<<EOD
+<h2>Summer Dining Hours</h2>
+<p>River Room Cafe (May 13-24), Fire Up Late Night Grill (May 25-27), and Catlett Market Place (May 28-Aug 2) are open for dining this summer. Find dining hours at a location near you.</p>
+<a href="/locations" class="btn btn-primary">More Info</a>
+EOD;
+
+  $paragraph->field_snp_section_body[LANGUAGE_NONE][0]['format'] = 'filtered_html';
+  $paragraph->field_snp_section_height[LANGUAGE_NONE][0]['value'] = 'snp_section_large';
+  $paragraph->field_snp_section_image[LANGUAGE_NONE][0]['fid'] = '316';
+  $paragraph->save();
+
+  // Join our Team.
+  $paragraph = new ParagraphsItemEntity(array('field_name' => 'field_snp_content_blocks', 'bundle' => 'snp_section'));
+  $paragraph->is_new = TRUE;
+  $paragraph->setHostEntity('node', $node);
+  $paragraph->field_snp_section_view_mode[LANGUAGE_NONE][0]['value'] = 'snp_section_image_left';
+  $paragraph->field_snp_section_overlay_op[LANGUAGE_NONE][0]['value'] = '0';
+  $paragraph->field_snp_section_pattern_op[LANGUAGE_NONE][0]['value'] = '0';
+  $paragraph->field_snp_section_admin_title[LANGUAGE_NONE][0]['value'] = 'Join our Team';
+  $paragraph->field_snp_section_body[LANGUAGE_NONE][0]['value'] = <<<EOD
+<h2>Join our Team</h2>
+<p>Working for us has its perks, including: competitive wages, flexible schedules, advancement opportunities, performance-based wage increases, and more!</p>
+<a href="https://studentlifejobs.uiowa.edu/jobs/" class="btn btn-primary">Learn More</a>
+EOD;
+
+  $paragraph->field_snp_section_body[LANGUAGE_NONE][0]['format'] = 'filtered_html';
+  $paragraph->field_snp_section_height[LANGUAGE_NONE][0]['value'] = 'snp_section_large';
+  $paragraph->field_snp_section_image[LANGUAGE_NONE][0]['fid'] = '2231';
+  $paragraph->save();
+
+  // Where to Eat.
+  $paragraph = new ParagraphsItemEntity(array('field_name' => 'field_snp_content_blocks', 'bundle' => 'snp_section'));
+  $paragraph->is_new = TRUE;
+  $paragraph->setHostEntity('node', $node);
+  $paragraph->field_snp_section_view_mode[LANGUAGE_NONE][0]['value'] = 'snp_section_full_width_background';
+  $paragraph->field_snp_section_overlay_op[LANGUAGE_NONE][0]['value'] = '0';
+  $paragraph->field_snp_section_pattern_op[LANGUAGE_NONE][0]['value'] = '0';
+  $paragraph->field_snp_section_addl_classes[LANGUAGE_NONE][0]['value'] = 'text-center';
+  $paragraph->field_snp_section_height[LANGUAGE_NONE][0]['value'] = 'snp_section_medium';
+  $paragraph->field_snp_section_admin_title[LANGUAGE_NONE][0]['value'] = 'Where to Eat';
+  $paragraph->field_snp_section_body[LANGUAGE_NONE][0]['format'] = 'filtered_html';
+  $paragraph->field_snp_section_body[LANGUAGE_NONE][0]['value'] = <<<EOD
+<h2>Where to Eat</h2>
+<p>Check out our C-Stores, Cafes and Market Places.</p>
+<a href="/locations" class="btn btn-primary">View Locations</a>
+EOD;
+  $paragraph->save();
+
+  // Thrive Station.
+  $paragraph = new ParagraphsItemEntity(array('field_name' => 'field_snp_content_blocks', 'bundle' => 'snp_section'));
+  $paragraph->is_new = TRUE;
+  $paragraph->setHostEntity('node', $node);
+  $paragraph->field_snp_section_view_mode[LANGUAGE_NONE][0]['value'] = 'snp_section_image_right';
+  $paragraph->field_snp_section_overlay_op[LANGUAGE_NONE][0]['value'] = '0';
+  $paragraph->field_snp_section_pattern_op[LANGUAGE_NONE][0]['value'] = '0';
+  $paragraph->field_snp_section_admin_title[LANGUAGE_NONE][0]['value'] = 'Thrive Station Now Open';
+  $paragraph->field_snp_section_body[LANGUAGE_NONE][0]['value'] = <<<EOD
+<h2>Thrive Station Now Open!</h2>
+<p>Thrive, a new station in Burge Market Place is now open! This station serves foods that are free of the top 8 food allergies, plus gluten. Vegan and vegetarian options are also available.</p>
+<a href="/nutrition" class="btn btn-primary">Learn More</a>
+EOD;
+
+  $paragraph->field_snp_section_body[LANGUAGE_NONE][0]['format'] = 'filtered_html';
+  $paragraph->field_snp_section_image[LANGUAGE_NONE][0]['fid'] = '2046';
+  $paragraph->field_snp_section_height[LANGUAGE_NONE][0]['value'] = 'snp_section_large';
+  $paragraph->save();
+
+  // Set the node to be the homepage.
+  variable_set('site_frontpage', 'node/' . $node->nid);
+}
+
+/**
+ * Set allowed bundles for SNP section content blocks.
+ */
+function dining_core_update_7241() {
+  $instance_info = field_info_instance('paragraphs_item', 'field_snp_section_content_blocks', 'snp_section');
+
+  $instance_info['settings']['allowed_bundles'] = array(
+    'snp_cards' => 'snp_cards',
+    'snp_accordion' => 'snp_accordion',
+    'snp_image_gallery' => 'snp_image_gallery',
+    'snp_map' => 'snp_map',
+    'person_grid' => 'person_grid',
+  );
+
+  field_update_instance($instance_info);
+}
+
+/**
+ * Set allowed bundles for SNP cards.
+ */
+function dining_core_update_7242() {
+  $instance_info = field_info_instance('paragraphs_item', 'field_snp_card', 'snp_cards');
+
+  $instance_info['settings']['allowed_bundles'] = array(
+    'snp_card' => 'snp_card',
+    'location_card' => 'location_card',
+    'snp_icon_card' => 'snp_icon_card',
+    'snp_stat' => 'snp_stat',
+
+  );
+
+  field_update_instance($instance_info);
+}
+
+/**
+ * Uninstall field_collection after removing upcoming hours field feature config.
+ */
+function dining_core_update_7243() {
+  features_revert_module('dining_location_entity');
+  module_disable(array('field_collection'));
+  drupal_uninstall_modules(array('field_collection'));
+  field_delete_field('field_location_hours_changes');
+  field_purge_batch(100);
+}
+
+/**
+ * Disable and uninstall dining_page_manager_pages.
+ */
+function dining_core_update_7244() {
+  module_disable(array('dining_page_manager_pages'));
+  drupal_uninstall_modules(array('dining_page_manager_pages'));
+}
+
+/**
+ * Nuke promos.
+ */
+function dining_core_update_7245() {
+  // Get all promotion nodes.
+  $query = new EntityFieldQuery();
+  $result = $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'promo')
+    ->execute();
+
+  // Delete all promotion nodes.
+  node_delete_multiple(array_keys($result['node']));
+
+  $modules = array('dining_promo_views', 'dining_promo_entity');
+
+  // Disable promotions.
+  module_disable($modules, FALSE);
+
+  // Uninstall promotions.
+  drupal_uninstall_modules($modules, FALSE);
+
+  // Delete the promotion content type.
+  node_type_delete('promo');
+}
+
+/**
+ * Nuke blogs.
+ */
+function dining_core_update_7246() {
+  // Get all blog nodes.
+  $query = new EntityFieldQuery();
+  $result = $query->entityCondition('entity_type', 'node')
+    ->entityCondition('bundle', 'blog')
+    ->execute();
+
+  // Delete all blog nodes.
+  node_delete_multiple(array_keys($result['node']));
+
+  $modules = array('dining_blog_views', 'dining_blog_entity');
+
+  // Disable blogs.
+  module_disable($modules, FALSE);
+
+  // Uninstall blogs.
+  drupal_uninstall_modules($modules, FALSE);
+
+  // Delete the blog content type.
+  node_type_delete('blog');
+}
+
+/**
+ * Use imagemagick as image toolkit.
+ */
+function dining_core_update_7247() {
+  module_enable(array('imagemagick'));
+  variable_set('image_toolkit', 'imagemagick');
+  variable_set('image_jpeg_quality', '90');
+}
+
+/**
+ * Grant roles permission to manage person content.
+ */
+function dining_core_update_7248() {
+  $roles = array(
+    'editor',
+    'webmaster',
+  );
+
+  $vocab = taxonomy_vocabulary_machine_name_load('person_help');
+
+  foreach ($roles as $name) {
+    $role = user_role_load_by_name($name);
+
+    user_role_grant_permissions($role->rid, array(
+      'create person content',
+      'edit any person content',
+      'delete any person content',
+      'add terms in person_help',
+      'view any unpublished person content',
+      "edit terms in {$vocab->vid}",
+      "delete terms in {$vocab->vid}",
+    ));
+  }
+}
+
+/**
+ * Delete unused person fields.
+ */
+function dining_core_update_7249() {
+  features_revert_module('dining_common_image_styles');
+  features_revert_module('dining_person');
+  field_delete_field('field_person_name');
+  field_purge_batch(100);
+}
+
+/**
+ * Disable and uninstall unnecessary cron modules.
+ */
+function dining_core_update_7250() {
+  $modules = array(
+    'elysia_cron',
+    'uiowa_cron',
+  );
+
+  module_disable($modules);
+  drupal_uninstall_modules($modules);
+}
+
+/**
+ * Set allowed bundles for SNP section content blocks.
+ */
+function dining_core_update_7251() {
+  $instance_info = field_info_instance('paragraphs_item', 'field_snp_section_content_blocks', 'snp_section');
+
+  $instance_info['settings']['allowed_bundles'] = array(
+    'snp_cards' => 'snp_cards',
+    'snp_accordion' => 'snp_accordion',
+    'snp_image_gallery' => 'snp_image_gallery',
+    'snp_map' => 'snp_map',
+    'person_grid' => 'person_grid',
+    'snp_video' => 'snp_video',
+  );
+
+  field_update_instance($instance_info);
+}
+
+
+/**
+ * Set allowed bundles for SNP section content blocks.
+ */
+function dining_core_update_7252() {
+  $instance_info = field_info_instance('paragraphs_item', 'field_snp_section_content_blocks', 'snp_section');
+
+  $instance_info['settings']['allowed_bundles'] = array(
+    'snp_cards' => 'snp_cards',
+    'snp_accordion' => 'snp_accordion',
+    'snp_image_gallery' => 'snp_image_gallery',
+    'snp_map' => 'snp_map',
+    'person_grid' => 'person_grid',
+    'snp_video' => 'snp_video',
+    'snp_block' => 'snp_block',
+  );
+
+  field_update_instance($instance_info);
+}
+
+/**
+ * Enable uiowa_events.
+ */
+function dining_core_update_7253() {
+  module_enable(array('uiowa_events'));
+}
+
+/**
+ * Replace panels + page manager locations page with basic page.
+ */
+function dining_core_update_7254() {
+  $modules = array(
+    'panels',
+    'page_manager',
+    'dining_location_pages',
+    'dining_page_manager_pages'
+  );
+
+  $node = new stdClass();
+  $node->title = "Where To Eat";
+  $node->type = "page";
+  node_object_prepare($node);
+  $node->language = LANGUAGE_NONE;
+  $node->uid = 1;
+  $node->status = 1;
+  node_save($node);
+
+  $item = array(
+    'link_path' => 'node/' . $node->nid,
+    'link_title' => 'Where To Eat',
+    'menu_name' => 'main-menu',
+    'weight' => -48
+  );
+
+  $mlid = menu_link_save($item);
+
+  // Move all page_manager locations page menu children to new basic page mlid.
+  $tree = menu_build_tree('main-menu');
+
+  foreach ($tree as $item) {
+    if ($item['link']['mlid'] == 1534) {
+      foreach ($item['below'] as $child) {
+        $link = menu_link_load($child['link']['mlid']);
+        $link['plid'] = $mlid;
+        menu_link_save($link);
+      }
+    }
+  }
+
+  module_disable($modules);
+  drupal_uninstall_modules($modules);
+  drupal_flush_all_caches();
+}
+
+/**
+ * Uninstall sliderfield.
+ */
+function dining_core_update_7255() {
+  module_disable(array('sliderfield'));
+  drupal_uninstall_modules(array('sliderfield'));
+}

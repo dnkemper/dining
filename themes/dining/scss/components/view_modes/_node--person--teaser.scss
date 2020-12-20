@@ -1,0 +1,39 @@
+.node--person--teaser {
+  margin-bottom: 2rem;
+  width: 25%;
+
+  .field-name-field-person-photo {
+    img {
+      width: 100%;
+
+      @supports (object-fit: cover) {
+        object-fit: cover;
+      }
+    }
+  }
+
+  .field-name-field-person-title {
+    font-style: italic;
+    @extend .small;
+  }
+
+  .content {
+    position: relative;
+
+    .btn-group-justified {
+      width: calc(100% + 1px);
+    }
+  }
+  .panel-heading {
+    padding: 10px;
+  }
+
+  .field-name-field-person-gender-pronoun, .field-name-field-person-languages {
+    .field-item{
+      @extend .label;
+      @extend .label-default;
+      padding: .2em .2em .3em;
+    }
+  }
+}
+

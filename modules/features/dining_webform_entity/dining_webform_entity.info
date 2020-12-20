@@ -1,0 +1,17 @@
+name = Dining Webform Entity
+description = The webform content type and dependencies
+core = 7.x
+package = Dining
+version = 7.x-1.0-dev
+project = dining_webform_entity
+dependencies[] = features
+dependencies[] = options
+dependencies[] = options_element
+dependencies[] = select_or_other
+dependencies[] = strongarm
+dependencies[] = text
+dependencies[] = webform
+features[ctools][] = strongarm:strongarm:1
+features[features_api][] = api:1
+features[field][] = node-webform-body
+features[node][] = webform

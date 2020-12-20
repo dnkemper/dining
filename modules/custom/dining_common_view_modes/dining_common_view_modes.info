@@ -1,0 +1,6 @@
+name = Dining Common View Modes
+description = Custom view modes for the dining site
+core = 7.x
+package = Dining
+version = 7.x-1.0-dev
+project = dining_common_view_modes

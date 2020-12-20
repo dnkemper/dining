@@ -1,0 +1,44 @@
+$flex-breakpoints: (sm, md, lg);
+.flex-grids,
+.flex-sm-2, .flex-md-2, .flex-lg-2,
+.flex-sm-3, .flex-md-3, .flex-lg-3,
+.flex-sm-4, .flex-md-4, .flex-lg-4 {
+  display: flex;
+  flex-wrap: wrap;
+  flex-grow: 0;
+  flex-shrink: 0;
+  margin: -1.5rem;
+
+  > div,
+  > article {
+    margin: 1.5rem;
+    flex-basis: 100%;
+  }
+}
+
+@each $breakpoint in $flex-breakpoints {
+  .flex-#{$breakpoint}-2 {
+    @include breakpoint($breakpoint) {
+      > div,
+      > article {
+        flex-basis: calc((50% - 3rem) - 2px);
+      }
+    }
+  }
+  .flex-#{$breakpoint}-3 {
+    @include breakpoint($breakpoint) {
+      > div,
+      > article {
+        flex-basis: calc((33.3% - 3rem) - 2px);
+      }
+    }
+  }
+  .flex-#{$breakpoint}-4 {
+    @include breakpoint($breakpoint) {
+      > div,
+      > article {
+        flex-basis: calc((25% - 3rem) - 2px);
+      }
+    }
+  }
+}

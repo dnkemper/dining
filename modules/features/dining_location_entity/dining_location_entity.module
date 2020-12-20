@@ -1,0 +1,378 @@
+<?php
+/**
+ * @file
+ * Code for the Dining Location Entity feature.
+ */
+
+include_once 'dining_location_entity.features.inc';
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dining_location_entity_form_location_node_form_alter(&$form, &$form_state, $form_id) {
+  dining_core_attach_chosen($form);
+}
+
+/**
+ * Bongo field allowed_values_function callback.
+ *
+ * @see: housing_location.features.field_base.inc
+ *
+ * @return array
+ *   $options array of options.
+ */
+function dining_location_bongo_field_options() {
+  if (module_exists('bongo')) {
+    $data = bongo_get_stop_list();
+
+    $options = array();
+
+    foreach ($data['stops'] as $stop) {
+      $stop_number = $stop['stop']['stopnumber'];
+      $stop_title = $stop['stop']['stoptitle'];
+
+      $options[$stop_number] = t('@stoptitle (@stopnumber)', array(
+        '@stoptitle' => $stop_title,
+        '@stopnumber' => $stop_number,
+      ));
+    }
+
+    // Sort by stop name and maintain keys.
+    asort($options);
+
+    return $options;
+  }
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function dining_location_entity_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'ctools' && $plugin_type == 'content_types') {
+    return 'plugins/' . $plugin_type;
+  }
+}
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function dining_location_entity_field_extra_fields() {
+  $extra['node']['location'] = array(
+    'display' => array(
+      'location_getting_around_bongo' => array(
+        'label' => t('Getting Around and Bongo'),
+        'description' => t('Getting around and Bongo combined.'),
+        'weight' => 99,
+      ),
+      'location_menu' => array(
+        'label' => t('Marketplace Menu'),
+        'description' => t('Menu display for Marketplaces.'),
+        'weight' => 99,
+      ),
+      'location_involved' => array(
+        'label' => t('Get Involved'),
+        'description' => t('Get involved info for a given location.'),
+        'weight' => 99,
+      ),
+      'location_social_media' => array(
+        'label' => t('Social Media Menu'),
+        'description' => t('Social media menu.'),
+        'weight' => 99,
+      ),
+      'location_touch' => array(
+        'label' => t('Keep in touch'),
+        'description' => t('Keeping in Touch [For Parents/Families and Friends].'),
+        'weight' => 99,
+      ),
+      'location_allergen_legend' => array(
+        'label' => t('Allergen Legend'),
+        'description' => t('A legend of food allergen indicators.'),
+        'weight' => 99,
+      )
+    ),
+  );
+
+  return $extra;
+}
+
+
+
+/**
+ * Implements hook_node_view().
+ */
+function dining_location_entity_node_view($node, $view_mode, $langcode) {
+  // Get extra field info from hook_field_extra_fields().
+  $extra = dining_location_entity_field_extra_fields();
+
+  // Check that we're supporting the node type being viewed.
+  if (empty($extra['node'][$node->type]['display'])) {
+    return;
+  }
+
+  $config = field_bundle_settings('node', $node->type);
+  foreach ($extra['node'][$node->type]['display'] as $field_name => $field_info) {
+    // Check to make sure this field is visible in this view mode.
+    if (empty($config['extra_fields']['display'][$field_name][$view_mode]['visible'])) {
+      continue;
+    }
+
+    switch ($field_name) {
+      case 'location_getting_around_bongo':
+        if (!empty($node->field_location_getting_around) || !empty($node->field_location_bongo)) {
+          $render = array();
+          $render['panel'] = array(
+            '#type' => 'container',
+            '#attributes' => array(
+              'class' => array(
+                'field',
+                'field-location-getting-around-bongo',
+                'panel',
+                'panel-default',
+              ),
+            ),
+          );
+          $render['panel']['heading'] = array(
+            '#type' => 'container',
+            '#attributes' => array(
+              'class' => array(
+                'panel-heading',
+              ),
+            ),
+          );
+          $render['panel']['heading']['title'] = array(
+            '#type' => 'container',
+            '#attributes' => array(
+              'class' => array(
+                'panel-title',
+              ),
+            ),
+          );
+          $render['panel']['heading']['title']['markup'] = array(
+            '#type' => 'markup',
+            '#markup' => '<i class="fa fa-bus" aria-hidden="true"></i>  &nbsp Getting Around',
+          );
+          $render['panel']['body'] = array(
+            '#type' => 'container',
+            '#attributes' => array(
+              'class' => array(
+                'panel-body',
+              ),
+            ),
+          );
+          if (!empty($node->field_location_getting_around)) {
+            $field = field_view_field('node', $node, 'field_location_getting_around');
+            $field['#label_display'] = 'hidden';
+            $render['panel']['body']['getting_around'] = array(
+              '#type' => 'markup',
+              '#markup' => render($field),
+            );
+          }
+          if (!empty($node->field_location_bongo)) {
+            $field = field_view_field('node', $node, 'field_location_bongo');
+            $render['panel']['body']['bongo'] = array(
+              '#type' => 'markup',
+              '#markup' => render($field),
+            );
+          }
+          $node->content[$field_name] = array(
+            '#markup' => render($render),
+          );
+        }
+        break;
+
+      case 'location_menu':
+        if ($node->nid == 5) {
+          $marketplace = 'hillcrest';
+        }
+        elseif ($node->nid == 4) {
+          $marketplace = 'burge';
+        }
+        elseif ($node->nid == 11366) {
+          $marketplace = 'catlett';
+        }
+
+        if (isset($marketplace)) {
+
+          $node->content[$field_name] = array(
+            '#type' => 'container',
+            '#attributes' => array(
+              'id' => 'location-menu',
+            ),
+            'menu' => array(
+              '#markup' => dining_menus_marketplace_menu($marketplace),
+            ),
+          );
+        }
+
+        break;
+
+      case 'location_involved':
+        $render = array();
+        $panels[] = array(
+          'icon' => '<i class="fa fa-bullhorn" aria-hidden="true"></i>',
+          'title' => 'Advocate for students',
+          'subtitle' => 'Become a member of the Student Dining Advisory Committee.',
+          'link' => '/dining-advisory-committee',
+        );
+        $panels[] = array(
+          'icon' => '<i class="fa fa-ticket" aria-hidden="true"></i>',
+          'title' => 'Meal Plans',
+          'subtitle' => 'Check out our meal plan options.',
+          'link' => '/meal-plans',
+        );
+        $panels[] = array(
+          'icon' => '<i class="fa fa-globe" aria-hidden="true"></i>',
+          'title' => 'Sustainability',
+          'subtitle' => 'Help us improve the planet.',
+          'link' => '/sustainability',
+        );
+        $panels[] = array(
+          'icon' => '<i class="fa fa-briefcase" aria-hidden="true"></i>',
+          'title' => 'Work With Us',
+          'subtitle' => 'Find out about our student employment opportunities.',
+          'link' => '/work-for-us',
+        );
+        $render['heading'] = array(
+          '#type' => 'markup',
+          '#markup' => '<h3>Get Involved</h3>',
+        );
+        $render['panel_group'] = array(
+          '#type' => 'container',
+          '#attributes' => array(
+            'class' => array(
+              'panel-group',
+              'location-get-involved',
+            ),
+          ),
+        );
+        foreach ($panels as $key => $panel) {
+          $render['panel_group'][$key]['panel'] = array(
+            '#type' => 'container',
+            '#attributes' => array(
+              'class' => array(
+                'panel-involved',
+              ),
+            ),
+          );
+          $render['panel_group'][$key]['panel']['heading'] = array(
+            '#type' => 'container',
+            '#attributes' => array(
+              'class' => array(
+                'panel-heading',
+              ),
+            ),
+          );
+          $render['panel_group'][$key]['panel']['heading']['link'] = array(
+            '#theme' => 'link',
+            '#text' => '<div class="involved-icon">' . $panel['icon'] . '</div><div class="involved-content"><span class="involved-title">' . $panel['title'] . '</span><span class="small">' . $panel['subtitle'] . '</span></div>',
+            '#path' => $panel['link'],
+            '#options' => array(
+              'external' => TRUE,
+              'html' => TRUE,
+            ),
+          );
+        }
+        $node->content[$field_name] = array(
+          '#markup' => render($render),
+        );
+        break;
+
+      case 'location_touch':
+        $render = array();
+        $render['heading'] = array(
+          '#type' => 'markup',
+          '#markup' => '<h3>Keep in Touch</h3>',
+        );
+        $render['container'] = array(
+          '#type' => 'container',
+          '#attributes' => array(
+            'class' => array(
+              'keep-in-touch-content',
+            ),
+          ),
+        );
+        $render['container']['mail'] = array(
+          '#theme' => 'link',
+          '#text' => '<i class="fa fa-envelope" aria-hidden="true"></i><div class="small">Email Us</div>',
+          '#path' => 'mailto:dining@uiowa.edu',
+          '#options' => array(
+            'html' => TRUE,
+            'attributes' => array(
+              'class' => array(
+                'location-mail',
+                'btn',
+                'btn-tan-dark',
+              ),
+            ),
+          ),
+        );
+        $render['container']['treat'] = array(
+          '#theme' => 'link',
+          '#text' => '<i class="fa fa-birthday-cake" aria-hidden="true"></i><div class="small">Hawkeye Treats</div>',
+          '#path' => 'https://apps.housing.uiowa.edu/treats',
+          '#options' => array(
+            'html' => TRUE,
+            'attributes' => array(
+              'class' => array(
+                'location-treat',
+                'btn',
+                'btn-tan-dark',
+              ),
+            ),
+          ),
+        );
+        $node->content[$field_name] = array(
+          '#markup' => render($render),
+        );
+        break;
+
+      case 'location_social_media':
+        $render = array();
+
+        $social_menu = variable_get('uhd_footer_social_media_menu');
+        if (!empty($social_menu) && $social_menu != 'none') {
+          $social_menu_tree = menu_tree_all_data($social_menu);
+          $social_menu_output = menu_tree_output($social_menu_tree);
+          $render['container'] = array(
+            '#type' => 'container',
+            '#attributes' => array(
+              'class' => array(
+                'field',
+                'location-social-media',
+              ),
+            ),
+          );
+          $render['container']['markup'] = array(
+            '#markup' => render($social_menu_output),
+          );
+          $node->content[$field_name] = array(
+            '#markup' => render($render),
+          );
+        }
+        break;
+
+      case 'location_allergen_legend':
+        if ($node->field_location_type[LANGUAGE_NONE][0]['tid'] == 7) {
+          $block = block_load('dining_taxonomy', 'allergen_nutrition_legend');
+          $block_render = _block_get_renderable_array(_block_render_blocks(array($block)));
+          $node->content[$field_name] = array(
+            '#markup' => render($block_render),
+          );
+        }
+
+        break;
+    }
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function dining_location_entity_theme() {
+  return array(
+    'staticmap' => array(
+      'template' => 'staticmap',
+      'variables' => array('staticpath' => NULL),
+    ),
+  );
+}

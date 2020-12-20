@@ -1,0 +1,7 @@
+name = Dining Menus
+description = Marketplace menus for dining.uiowa.edu
+core = 7.x
+package = Dining
+version = 7.x-1.0
+project = dining_menus
+dependencies[] = dining_hours

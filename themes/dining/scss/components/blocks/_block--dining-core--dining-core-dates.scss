@@ -1,0 +1,87 @@
+.block--dining-core--dining-core-dates {
+  .slick {
+    position: relative;
+  }
+
+  .slick__slider {
+    padding-right: 31px;
+  }
+
+  .slick__arrow {
+    position: absolute;
+    height: 100%;
+    width: 30px;
+    top: 0;
+    right: 0;
+
+    .slick-arrow {
+      background: #000;
+      width: 100%;
+      left: 0;
+      height: 49%;
+      font-size: 0;
+      appearance: none;
+      border: none;
+      position: absolute;
+
+      &:before {
+        opacity: 1;
+        color: #fff;
+        font-size: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      &:hover,
+      &:focus {
+        background-color: $link-color;
+
+        &:before {
+          color: #fff;
+        }
+      }
+    }
+
+    .slick-prev {
+      top: 0;
+
+      &:before {
+        transform: rotate(90deg);
+        @include fa(angle-left);
+      }
+    }
+
+    .slick-next {
+      bottom: 0;
+
+      &:before {
+        transform: rotate(90deg);
+        @include fa(angle-right);
+      }
+    }
+  }
+
+  .uiowa-event {
+    @extend .alert;
+    @extend .alert-info;
+    border-radius: 0;
+    margin-bottom: 0;
+
+    h3 {
+      display: inline-block;
+    }
+
+    .date-string {
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      color: #000;
+    }
+
+    .uiowa-event-description {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}

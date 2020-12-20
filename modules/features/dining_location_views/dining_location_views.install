@@ -1,0 +1,24 @@
+<?php
+/**
+ * @file
+ * Holds install/uninstall and update functionality.
+ */
+
+/**
+ * Enables modernizr if not already.
+ */
+function dining_location_views_update_7000(&$sandbox) {
+  if (!module_exists('modernizr')) {
+    module_enable(array('modernizr'));
+  }
+}
+
+/**
+ * Uninstall ip_geoloc since it's no longer necessary.
+ */
+function dining_location_views_update_7200() {
+
+  module_disable(array('ip_geoloc'));
+
+  drupal_uninstall_modules(array('ip_geoloc'));
+}

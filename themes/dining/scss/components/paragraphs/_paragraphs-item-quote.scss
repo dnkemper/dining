@@ -1,0 +1,18 @@
+.paragraphs-item-quote {
+  padding: 0 6rem;
+  text-align: center;
+
+  .field-name-field-quote-body {
+    @extend .large;
+    font-style: italic;
+    border-bottom: 1px solid #eee;
+  }
+
+  .field-name-field-quote-name {
+    font-weight: $fw-bold;
+  }
+
+  .field-name-field-quote-title {
+    font-weight: 100;
+  }
+}

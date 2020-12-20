@@ -1,0 +1,50 @@
+.panel {
+  margin-bottom: 0;
+  transition: box-shadow 0.2s ease-out;
+
+  &:hover,
+  &:focus {
+    box-shadow: 0px 2px 10px rgba(0,0,0,0.2);
+  }
+}
+
+.panel-heading {
+  box-shadow: 0px 1px 3px -1px rgba(0,0,0,0.1);
+}
+
+.panel-title {
+  font-weight: $fw-bold;
+  letter-spacing: -0.5px;
+  font-size: 1.8rem;
+
+  > a:not([data-toggle="collapse"]) {
+    display: block;
+    position: relative;
+
+    &:before {
+      @include fa(angle-double-right);
+      position: absolute;
+      right: 0;
+    }
+
+    &:hover,
+    &:focus {
+      text-decoration: none;
+    }
+  }
+}
+
+.panel-heading.yellow-flair {
+  position: relative;
+  padding-top: 14px;
+
+  &:before {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: 0px;
+    height: 8px;
+    width: 40%;
+    background-color: $brand-yellow;
+  }
+}

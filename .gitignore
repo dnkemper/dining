@@ -1,0 +1,7 @@
+settings.php
+.DS_Store
+themes/dining/.sass-cache/*
+files
+settings.local.php
+.vscode
+.idea

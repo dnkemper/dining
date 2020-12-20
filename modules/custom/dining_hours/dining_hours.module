@@ -1,0 +1,748 @@
+<?php
+/**
+ * @file
+ * Code for Dining Hours.
+ */
+
+/**
+ * Implements hook_node_update().
+ */
+function dining_hours_node_update($node)
+{
+  if ($node->type == 'location') {
+    dining_hours_invalidate_cache();
+  }
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function dining_hours_field_formatter_info() {
+  return array(
+    'dining_hours' => array(
+      'label' => t('Dining hours'),
+      'field types' => array('text'),
+      'settings' => array(
+        'date_format' => 'D n/j',
+        'pickadate' => FALSE,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function dining_hours_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $element = array();
+
+  $element['date_format'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Date format'),
+    '#description' => t('The date format to use. Must be a valid <a href="@url">PHP date format</a>.', array('@url' => url('https://php.net/manual/en/datetime.formats.date.php'))),
+    '#default_value' => $settings['date_format'],
+    '#required' => TRUE,
+  );
+
+  $element['pickadate'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Pickadate'),
+    '#description' => t('Whether or not to display the Pickadate widget to view other dates.'),
+    '#default_value' => $settings['pickadate'],
+  );
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function dining_hours_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $summary = t('Date format: @date_format, Display Pickadate: @pickadate', array(
+    '@date_format' => $settings['date_format'],
+    '@pickadate' => ($settings['pickadate']) ? 'yes' : 'no',
+  ));
+
+  return $summary;
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function dining_hours_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    case 'dining_hours':
+      $settings = $display['settings'];
+
+      foreach ($items as $item) {
+        $location_calendar_key = $item['safe_value'];
+      }
+
+      $location_cleaned_name = drupal_html_class($entity->title);
+      $element[0] = drupal_get_form('dining_hours_location_form', $location_calendar_key, $location_cleaned_name, $settings['date_format'], $settings['pickadate'], $entity->nid);
+
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_extra_fields().
+ */
+function dining_hours_field_extra_fields() {
+  $extra['node']['location']['display']['dining_hours_status_indicator'] = array(
+    'label' => t('Status indicator'),
+    'description' => t("Indicates whether the location is open or closed today."),
+    'weight' => 0,
+  );
+
+  return $extra;
+}
+
+/**
+ * Implements hook_node_view().
+ *
+ * Handles the logic for dining_hours_status_indicator extra field rendering.
+ */
+function dining_hours_node_view($node, $view_mode, $langcode) {
+  $extrafields = field_extra_fields_get_display('node', $node->type, $view_mode);
+  $extrafield_name = 'dining_hours_status_indicator';
+
+  if (isset($extrafields[$extrafield_name], $extrafields[$extrafield_name]['visible']) && $extrafields[$extrafield_name]['visible']) {
+    if (isset($node->field_location_hours_key, $node->field_location_hours_key[LANGUAGE_NONE][0]['safe_value'])) {
+      $location_calendar_key = $node->field_location_hours_key[LANGUAGE_NONE][0]['safe_value'];
+
+      // Get today's hours.
+      $dates = _dining_hours_location_data($location_calendar_key, 'today', 'today');
+      $today = array_pop($dates);
+
+      // Get the next open day variable if set. If not, get ~6 months of data
+      // and stop on the next open day.
+      $next_open_day = variable_get($location_calendar_key . '_next_open_day', _dining_hours_location_data($location_calendar_key, 'today', 'today +180 days', TRUE));
+
+      // Make an exception for tomorrow.
+      if ($next_open_day) {
+        if ($next_open_day == strtotime('tomorrow')) {
+          $next_open_day = 'tomorrow';
+        }
+        else {
+          $next_open_day = date('M d', $next_open_day);
+        }
+      }
+
+      $cleaned_name = drupal_html_class($node->title);
+      $path = drupal_get_path('module', 'dining_hours');
+
+      $node->content[$extrafield_name] = array(
+        'wrapper' => array(
+          '#type' => 'container',
+          '#attributes' => array(
+            'class' => array('box open-status'),
+            'id' => $cleaned_name,
+          ),
+          'icon' => array(
+            '#prefix' => '<i class="fa fa-clock-o">',
+            '#suffix' => '</i>',
+          ),
+          'label' => array(
+            '#prefix' => '<span class="label">',
+            '#suffix' => '</span>',
+          ),
+          'data-point' => array(
+            '#prefix' => '<span class="data-point">',
+            '#suffix' => '</span>',
+            '#markup' => '&nbsp;'
+          ),
+        ),
+        '#attached' => array(
+          'js' => array(
+            array(
+              'data' => array(
+                'diningHours' => array(
+                  $cleaned_name => array(
+                    'todaysHours' => $today['times'],
+                    'nextOpenDay' => $next_open_day,
+                  ),
+                ),
+              ),
+              'type' => 'setting',
+            ),
+            array(
+              'data' => $path . '/js/moment.min.js',
+              'type' => 'file',
+            ),
+            array(
+              'data' => $path . '/js/dining_hours.today.js',
+              'type' => 'file',
+            ),
+          ),
+        ),
+      );
+    }
+  }
+}
+
+/**
+ * Build the render array of dates view markup.
+ *
+ * @return array
+ *   A render array of the dates view data.
+ */
+function dining_hours_location_form($form, &$form_state, $location_calendar_key, $location_cleaned_name, $date_format, $pickadate, $nid) {
+  $form = array(
+    '#attributes' => array(
+      'class' => 'dining-hours-container',
+    ),
+  );
+
+  $start = isset($form_state['values'], $form_state['values']['start']) ? $form_state['values']['start'] : 'today';
+  $end = isset($form_state['values'], $form_state['values']['end']) ? $form_state['values']['end'] : 'today';
+  $dates = _dining_hours_location_data($location_calendar_key, $start, $end);
+  $link_dates = _dining_hours_get_link_dates();
+
+  // @see: dining_hours.today.js
+  $form['dates-wrapper'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('dates-wrapper'),
+    ),
+  );
+
+  $form['dates-wrapper']['dates'] = array(
+    '#theme' => 'item_list',
+    '#items' => dining_hours_location_dates_item_list($dates, $date_format),
+    '#attributes' => array(
+      'class' => array('dining-hours-date-list'),
+      'id' => 'dining-hours-' . $location_cleaned_name . '-dates',
+      'tabindex' => '-1',
+    ),
+  );
+
+  $form['button-pickadate-wrapper'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('button-pickadate-wrapper'),
+    ),
+  );
+
+  $form['button-pickadate-wrapper']['button-wrapper'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'class' => array('button-wrapper btn-group-xs'),
+    ),
+    '#attached' => array(
+      'js' => array(
+        drupal_get_path('module', 'dining_hours') . '/js/dining_hours.active.js' => array('weight' => 102),
+      ),
+    ),
+    'buttons' => array(
+      'today' => array(
+        '#type' => 'button',
+        '#value' => t('Today'),
+        '#attributes' => array(
+          'class' => array('dining-hours-button'),
+          'data-dining-hours-start' => $link_dates['today'],
+          'data-dining-hours-end' => $link_dates['today'],
+        ),
+        '#ajax' => array(
+          'wrapper' => 'dining-hours-' . $location_cleaned_name . '-dates',
+          'callback' => 'dining_hours_location_form_pickadate',
+          'event' => 'click',
+          'progress' => array('type' => 'none'),
+        ),
+        '#element_validate' => array(
+          'dining_hours_button_validate',
+        ),
+      ),
+      'tomorrow' => array(
+        '#type' => 'button',
+        '#value' => t('Tomorrow'),
+        '#attributes' => array(
+          'class' => array('dining-hours-button'),
+          'data-dining-hours-start' => $link_dates['tomorrow'],
+          'data-dining-hours-end' => $link_dates['tomorrow'],
+        ),
+        '#ajax' => array(
+          'wrapper' => 'dining-hours-' . $location_cleaned_name . '-dates',
+          'callback' => 'dining_hours_location_form_pickadate',
+          'event' => 'click',
+          'progress' => array('type' => 'none'),
+        ),
+        '#element_validate' => array(
+          'dining_hours_button_validate',
+        ),
+      ),
+      'this_weekish' => array(
+        '#type' => 'button',
+        '#value' => (date('w') < 4) ? t('This week') : t('This weekend'),
+        '#attributes' => array(
+          'class' => array('dining-hours-button'),
+          'data-dining-hours-start' => (date('w') < 4) ? $link_dates['today'] : $link_dates['this_weekend'][0],
+          'data-dining-hours-end' => $link_dates['this_weekend'][1],
+        ),
+        '#ajax' => array(
+          'wrapper' => 'dining-hours-' . $location_cleaned_name . '-dates',
+          'callback' => 'dining_hours_location_form_pickadate',
+          'event' => 'click',
+          'progress' => array('type' => 'none'),
+        ),
+        '#element_validate' => array(
+          'dining_hours_button_validate',
+        ),
+      ),
+      'next_week' => array(
+        '#type' => 'button',
+        '#value' => t('Next week'),
+        '#attributes' => array(
+          'class' => array('dining-hours-button'),
+          'data-dining-hours-start' => $link_dates['next_week'][0],
+          'data-dining-hours-end' => $link_dates['next_week'][1],
+        ),
+        '#ajax' => array(
+          'wrapper' => 'dining-hours-' . $location_cleaned_name . '-dates',
+          'callback' => 'dining_hours_location_form_pickadate',
+          'event' => 'click',
+          'progress' => array('type' => 'none'),
+        ),
+        '#element_validate' => array(
+          'dining_hours_button_validate',
+        ),
+      ),
+    )
+  );
+
+  if ($pickadate == TRUE) {
+    $form['button-pickadate-wrapper']['pickadate-wrapper'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('<i class="dining-hours-spinner fa fa-cog"></i> Advanced search'),
+      '#attributes' => array(
+        'class' => array('pickadate-wrapper'),
+      ),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    );
+
+    $form['button-pickadate-wrapper']['pickadate-wrapper']['#attached'] = array(
+      'js' => array(
+        drupal_get_path('module', 'dining_hours') . '/js/dining_hours.datepicker.js' => array('weight' => 100),
+        array(
+          'data' => array(
+            'diningHours' => array(
+              'locationName' => $location_cleaned_name,
+            ),
+          ),
+          'type' => 'setting',
+        ),
+      ),
+      'libraries_load' => array(
+        array('pickadate'),
+      ),
+    );
+
+    $form['button-pickadate-wrapper']['pickadate-wrapper']['start'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Start date'),
+      '#attributes' => array(
+        'class' => array('dining-hours-datepicker-start'),
+        'placeholder' => t('Select start date'),
+      ),
+      '#default_value' => date('l, M d, Y', strtotime($start)),
+    );
+
+    $form['button-pickadate-wrapper']['pickadate-wrapper']['end'] = array(
+      '#type' => 'textfield',
+      '#title' => t('End date'),
+      '#attributes' => array(
+        'class' => array('dining-hours-datepicker-end'),
+        'placeholder' => t('Select end date'),
+      ),
+      '#default_value' => date('l, M d, Y', strtotime($end)),
+    );
+
+    $form['button-pickadate-wrapper']['pickadate-wrapper']['submit'] = array(
+      '#value' => t('Apply'),
+      '#type' => 'button',
+      '#ajax' => array(
+        'wrapper' => 'dining-hours-' . $location_cleaned_name . '-dates',
+        'callback' => 'dining_hours_location_form_pickadate',
+        'event' => 'click',
+      ),
+    );
+  }
+
+  return $form;
+}
+
+/**
+ * Dining hours location form button validation.
+ *
+ * @see: dining_hours_location_form().
+ */
+function dining_hours_button_validate($element, &$form_state, $form) {
+  if ($form_state['triggering_element']['#value'] == $element['#value']) {
+    if (isset($element['#attributes'], $element['#attributes']['data-dining-hours-start'], $element['#attributes']['data-dining-hours-end'])) {
+      $element['#parents'] = array('start');
+      form_set_value($element, $element['#attributes']['data-dining-hours-start'], $form_state);
+
+      $element['#parents'] = array('end');
+      form_set_value($element, $element['#attributes']['data-dining-hours-end'], $form_state);
+    }
+  }
+}
+
+/**
+ * Dining hours location form AJAX callback.
+ *
+ * @see: dining_hours_location_form().
+ */
+function dining_hours_location_form_pickadate($form, &$form_state) {
+  return $form['dates-wrapper']['dates'];
+}
+
+/**
+ * Build list of dates structure necessary for item_list.
+ *
+ * @see: dining_hours_location_form().
+ */
+function dining_hours_location_dates_item_list($dates, $date_format) {
+  $items = array();
+
+  if (!empty($dates)) {
+    foreach ($dates as $date) {
+      $hours = array();
+
+      if ($date['closed']) {
+        $hours[] = t('<span class="label label-danger">Closed</span>');
+      }
+      else {
+        foreach ($date['times'] as $time) {
+          $markup = t('<span class="label label-success">Open</span>@start - @end', [
+            '@start' =>  date('g:ia', $time['start_time']),
+            '@end' => date('g:ia', $time['end_time']),
+          ]);
+
+          foreach ($time['categories'] as $category) {
+            $markup .= t(' <span class="label label-default">@category</span>', [
+              '@category' => $category,
+            ]);
+          }
+
+          $hours[] = $markup;
+        }
+      }
+
+      // Create contextual date intervals. If start date is greater than today,
+      // the hour set is upcoming. Otherwise the hour set is applicable to now.
+      $today = strtotime(date('M d Y'));
+
+      if ($date['start_date'] > $today) {
+        $interval = t('In @interval', array('@interval' => format_interval($date['start_date'] - $today , 1)));
+        $classes = 'dining-hours-date-header';
+      }
+      else {
+        $classes = 'dining-hours-date-header today';
+
+        // Include what day is today if it is grouped in a range.
+        if ($date['end_date'] > $today) {
+          $interval = t('Today is @today', array('@today' => date('M d', $today)));
+        }
+        else {
+          $interval = t('Today');
+        }
+      }
+
+      // Build the items array.
+      $items[] = array(
+        'data' => t('<div class="@classes"><span class="dining-hours-date">@start_date @end_date</span><span class="interval">@interval</span></div>', array(
+          '@classes' => $classes,
+          '@start_date' => date($date_format, $date['start_date']),
+          '@end_date' => isset($date['end_date']) ? '— ' . date($date_format, $date['end_date']) : '',
+          '@interval' => $interval,
+        )),
+        'children' => $hours,
+        'class' => array('dining-hours-date-container'),
+      );
+    }
+  }
+
+  return $items;
+}
+
+/**
+ * Implements hook_flush_caches().
+ */
+function dining_hours_flush_caches() {
+  return array('cache_dining_hours');
+}
+
+/**
+ * Dining hours cache invalidation helper function.
+ */
+function dining_hours_invalidate_cache() {
+  cache_clear_all('*', 'cache_dining_hours', TRUE);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function dining_hours_form_webform_client_form_17171_alter(&$form, &$form_state, $form_id) {
+  $form['#validate'][] = 'dining_hours_webform_17171_validate';
+}
+
+/**
+ * Webform validation.
+ */
+function dining_hours_webform_17171_validate(&$form, &$form_state) {
+  // Get the date from the input.
+  $minute = $form_state['values']['submitted']['time']['minute'] == '0' ? '00' : $form_state['values']['submitted']['time']['minute'];
+
+  $requested = $form_state['values']['submitted']['date']['month']
+    . '/'
+    . $form_state['values']['submitted']['date']['day']
+    . '/'
+    . $form_state['values']['submitted']['date']['year']
+    . ' '
+    . $form_state['values']['submitted']['time']['hour']
+    . ':'
+    . $minute
+    . $form_state['values']['submitted']['time']['ampm'];
+
+  $timestamp = strtotime($requested);
+
+  // Get the hours for the date selected.
+  $data = _dining_hours_location_data('RES-HSG-Dietitian', $requested, $requested, FALSE);
+
+  // Iterate over each hour set. Set flag if requested time not in hour set.
+  $valid = FALSE;
+
+  foreach ($data as $block) {
+    foreach ($block['times'] as $time) {
+      if ($timestamp >= $time['start_time'] && $timestamp <= $time['end_time']) {
+        $valid = TRUE;
+      }
+    }
+  }
+
+  // If error flag is set, return form error.
+  if (!$valid) {
+    form_set_error('submitted', t("Invalid date/time. Please ensure the requested date/time matches the dietitian's availability."));
+  }
+}
+
+/**
+ * Gets data from location ical file.
+ *
+ * @param string $location_calendar_key
+ *   The name of the location to query.
+ * @param string $start
+ *   The date format of the start date.
+ *   See: http://php.net/manual/en/datetime.formats.php.
+ * @param string $end
+ *   The date format of the end date.
+ *   See: http://php.net/manual/en/datetime.formats.php.
+ * @param bool $break_on_next_open_day
+ *   Whether or not to break the loop and return the next open day, if found.
+ *
+ * @return object
+ *   An array of dates.
+ */
+function _dining_hours_location_data($location_calendar_key, $start = 'today', $end = 'today', $break_on_next_open_day = FALSE) {
+  $cache_key = strtolower($location_calendar_key) . ':' . strtotime($start) . ':' . strtotime($end);
+  $data = &drupal_static(__FUNCTION__ . ':' . $cache_key);
+  if (!isset($data)) {
+    $cache = cache_get($cache_key, 'cache_dining_hours');
+    if (isset($cache, $cache->data, $cache->expire) &&  time() < $cache->expire) {
+      $data = $cache->data;
+    }
+    else {
+      $data = array();
+
+      $params = drupal_http_build_query(array(
+        'start' => date('m/d/Y', strtotime($start)),
+        'end' => ($end == $start) ? '' : date('m/d/Y', strtotime($end)),
+      ));
+
+      // Set the API URI and get the events for this location.
+      $uri = variable_get('dining_hours_api', 'https://es-apps.iowa.uiowa.edu/hours/api/v2/uhd/') . "{$location_calendar_key}?{$params}";
+      $response = drupal_http_request($uri);
+      $events = drupal_json_decode($response->data);
+
+      // Explicitly set the default timezone.
+      date_default_timezone_set('America/Chicago');
+
+      $dt_min = new DateTime($start);
+      $dt_max = new DateTime($end);
+
+      // End time must be greater than or equal to start time.
+      if ($dt_max < $dt_min) {
+        $dt_max = $dt_min;
+      }
+
+      // Include the end date in the period.
+      $dt_max = $dt_max->modify('+1 day');
+
+      $interval = new DateInterval('P1D');
+      $daterange = new DatePeriod($dt_min, $interval, $dt_max);
+
+      $i = 0;
+      $next_open_day = NULL;
+
+      foreach ($daterange as $date) {
+        $key = $date->getTimestamp();
+
+        // The v2 API indexes events by a string, e.g. 20170711.
+        $lookup = date('Ymd', $key);
+
+        if (isset($events[$lookup])) {
+          // Calculate the next open day from today.
+          if ($dt_min->format('M d Y') == date('M d Y', strtotime('today'))) {
+            if ($date->format('M d Y') != date('M d Y', strtotime('today'))) {
+              if (!isset($next_open_day)) {
+                $next_open_day = $key;
+                variable_set('dining_hours_' . strtolower($location_calendar_key) . '_next_open_day', $key);
+
+                if ($break_on_next_open_day) {
+                  $data = $next_open_day;
+                  break;
+                }
+              }
+            }
+          }
+
+          $hours = array();
+
+          foreach ($events[$lookup] as $event) {
+            // Set the times, adjusting for midnight.
+            $hours[] = array(
+              'start_time' => strtotime($event['StartHour']),
+              'end_time' => $event['EndHour'] == '00:00:00' ? strtotime($event['EndHour'] . ', +1 day') : strtotime($event['EndHour']),
+              'categories' => $event['Categories'],
+            );
+          }
+
+          // Sort the times in order of earliest to latest. The status indicator
+          // JavaScript relies on this sort order.
+          // @see: dining_hours.today.js
+          sort($hours);
+
+          // If there is no difference between hour sets, group together.
+          // We call array_udiff() twice since it only does a one-way comparison.
+          if (isset($data[$i - 1])
+            && empty(array_udiff($data[$i - 1]['times'], $hours, '_dining_hours_times_equal'))
+            && empty(array_udiff($hours, $data[$i - 1]['times'], '_dining_hours_times_equal'))) {
+            $data[$i - 1]['end_date'] = $key;
+          }
+          else {
+            $data[$i] = array(
+              'start_date' => $key,
+              'end_date' => NULL,
+              'times' => $hours,
+              'closed' => FALSE,
+            );
+
+            $i++;
+          }
+        }
+        // Closed.
+        else {
+          if (isset($data[$i - 1]) && $data[$i - 1]['closed'] == TRUE) {
+            $data[$i - 1]['end_date'] = $key;
+          }
+          else {
+            $data[$i] = array(
+              'start_date' => $key,
+              'end_date' => NULL,
+              'times' => array(),
+              'closed' => TRUE,
+            );
+
+            $i++;
+          }
+        }
+      }
+
+
+      // Don't cache the next open day, use the variable.
+      if (!$break_on_next_open_day) {
+        cache_set($cache_key, $data, 'cache_dining_hours', time() + 900);
+      }
+    }
+  }
+
+  // If no open day is found, return NULL rather than array of 'closed' dates.
+  if ($break_on_next_open_day && is_array($data)) {
+    return NULL;
+  }
+  else {
+    return $data;
+  }
+}
+
+/**
+ * Array_udiff() comparison callback.
+ *
+ * This is only comparing time blocks, i.e. hours and minutes.
+ *
+ * @see: _dining_hours_location_data().
+ */
+function _dining_hours_times_equal($a, $b) {
+  $a_start = $a['start_time'];
+  $b_start = $b['start_time'];
+  $a_end = $a['end_time'];
+  $b_end = $b['end_time'];
+
+  if ($a_start == $b_start && $a_end == $b_end) {
+    return 0;
+  }
+  elseif ($a_start < $b_start && $a_end < $b_end) {
+    return -1;
+  }
+  else {
+    return 1;
+  }
+}
+
+/**
+ * Helper function to get dates for calendar links.
+ */
+function _dining_hours_get_link_dates() {
+  $today = date('l, M d, Y');
+  $tomorrow = date('l, M d, Y', strtotime('tomorrow'));
+
+  // Set a relative date operator for the weekend.
+  $rel = (_dining_hours_is_weekend($today)) ? 'last' : 'this';
+
+  $this_weekend = array(
+    0 => date('l, M d, Y', strtotime("{$rel} Friday")),
+    1 => date('l, M d, Y', strtotime("this Sunday")),
+  );
+
+  $next_week = array(
+    0 => date('l, M d, Y', strtotime("+1 week, last Monday")),
+    1 => date('l, M d, Y', strtotime("+1 week, this Sunday")),
+  );
+
+  return array(
+    'today' => $today,
+    'tomorrow' => $tomorrow,
+    'this_weekend' => $this_weekend,
+    'next_week' => $next_week,
+  );
+}
+
+/**
+ * Helper function to determine if the current day falls on a weekend.
+ *
+ * @see: https://gist.github.com/nothnk/1736495
+ */
+function _dining_hours_is_weekend($date) {
+  return (date('N', strtotime($date)) >= 6);
+}

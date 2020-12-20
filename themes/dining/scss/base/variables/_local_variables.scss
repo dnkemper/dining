@@ -1,0 +1,60 @@
+// Texture path.
+$texture-path: '../images/textures';
+
+// Font weights.
+$fw-thin: 100;
+$fw-light: 300; //*
+$fw-regular: 400;  //*
+$fw-medium: 500;
+$fw-semibold: 600; //*
+$fw-bold: 700; //*
+$fw-extrabold: 800;
+$fw-black: 900; //*
+
+// Font weight kits, re-map font-weights that are not in our kit.
+$fw-thin: $fw-light;
+$fw-medium: $fw-regular;
+$fw-extrabold: $fw-bold;
+
+// Measurements.
+$toolbar-menu-height: 30px;
+$toolbar-drawer-height: 34px;
+$toolbar-menu-and-drawer-height: $toolbar-drawer-height + $toolbar-menu-height;
+$ui-bar-height: 41px;
+
+// Site dependent Measurements.
+$header-height: 62px;
+$primary-tabs-height: 37px;
+
+// Calculated measurements.
+$is_logged_in_with_drawer: $toolbar-menu-and-drawer-height + $ui-bar-height + $header-height + $primary-tabs-height;
+$is_logged_in_with_drawer_no_tabs: $toolbar-menu-and-drawer-height + $ui-bar-height + $header-height;
+$is_logged_in_without_drawer: $toolbar-menu-height + $ui-bar-height + $header-height + $primary-tabs-height;
+$is_logged_in_without_drawer_no_tabs: $toolbar-menu-height + $ui-bar-height + $header-height + $primary-tabs-height;
+$is_not_logged_in: $ui-bar-height + $header-height;
+
+// Spacing measurements.
+$field-vertical-spacing: 1rem;
+$main-wrapper-padding: 3rem;
+
+// Breakpoints
+$text-max-width: 900px;
+$sf-expanded: 960px;
+
+// Colors.
+$color-tan-light: #f1ede6;
+$color-tan-dark: #d8d4ce;
+$color-dark-blue: #4D546C;
+$color-gray-light: #f5f5f5;
+$color-black-light: #212221;
+
+// Brand Colors.
+$brand-yellow: #ffce00;
+$brand-old-gold: #81642b;
+
+
+// Text color styles.
+$disabled-text: #888;
+$accessible-grey: #797676;
+$accessible-grey-lg: #919191;
+$color-highlight: #1ba39c;

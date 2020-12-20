@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Dining Location Views feature.
+ */
+
+include_once 'dining_location_views.features.inc';

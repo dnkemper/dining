@@ -1,0 +1,40 @@
+<?php
+/**
+ * @file
+ * Code for the Dining Files feature.
+ */
+
+include_once 'dining_files.features.inc';
+
+/**
+* Implements hook_media_token_to_markup_alter().
+*/
+function dining_files_media_token_to_markup_alter(&$element, $tag_info, $settings) {
+  // Add classes to media embeds if a float is applied.
+  // See http://drupal.org/node/1885432#comment-7273478
+  if ((isset($element['content']['file']['#file']->override['attributes']['style'])) || (isset($element['content']['file']['#attributes']['style']))) {
+    if ($direction = _dining_files_media_has_float($element['content']['file']['#file']->override['attributes']['style'])) {
+      // Add a media-image-direction class
+      $element['content']['file']['#file']->override['attributes']['class'][] = "media-image-" . $direction;
+    }
+    if ($direction = _dining_files_media_has_float($element['content']['file']['#attributes']['style'])) {
+      // Add a media-image-direction class
+      $element['content']['file']['#attributes']['class'][] = "media-image-" . $direction;
+    }
+  }
+}
+
+/**
+* Does the given string contain a CSS rule to float:right or float:left?
+*
+* @param string $string
+*
+* @return boolean
+*/
+function _dining_files_media_has_float($string) {
+  foreach (array('right', 'left') as $direction) {
+    if (preg_match("!float\s*:\s*$direction!", $string)) {
+      return $direction;
+    }
+  }
+}

@@ -1,0 +1,53 @@
+.slick--optionset--default {
+  .slick__slider {
+    margin-bottom: 0;
+  }
+
+  .slick-dots {
+    bottom: inital;
+    top: 0;
+
+    li {
+      margin: 0;
+    }
+  }
+
+  .slick-arrow {
+    border-radius: 0;
+    background: #000;
+
+    &:before {
+      opacity: 1;
+      color: #fff;
+      font-size: 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    &:hover,
+    &:focus {
+      background-color: $link-color;
+
+      &:before {
+        color: #fff;
+      }
+    }
+  }
+
+  .slick-prev {
+    left: 10px;
+
+    &:before {
+      @include fa(angle-left);
+    }
+  }
+
+  .slick-next {
+    right: 10px;
+
+    &:before {
+      @include fa(angle-right);
+    }
+  }
+}
